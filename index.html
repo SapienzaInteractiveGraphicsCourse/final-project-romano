@@ -152,34 +152,34 @@ async function load_models(){
     await enemy3.load('models/gltf/enemy.glb');
     
 	loader2 = new GLTFLoader();
-	await loader2.load('envoirnment/remains.glb',function ( g ) {
+	await loader2.load('./envoirnment/remains.glb',function ( g ) {
 		
 		g.scene.rotation.set( 0, -2.4, 0 );
 		g.scene.position.set( -11, -1, -1 );
 		g.scene.scale.set( 0.5, 0.5, 0.5 );
 		scene.add( g.scene );
 	})			
-	await loader2.load('envoirnment/remains.glb',function ( g ) {
+	await loader2.load('./envoirnment/remains.glb',function ( g ) {
 		
 		g.scene.rotation.set( 0, 0, 0 );
 		g.scene.position.set( 21, 0, 31 );
 		g.scene.scale.set( 0.5, 0.5, 0.5 );
 		scene.add( g.scene );
 	})			
-	await loader2.load('envoirnment/remains.glb',function ( g ) {
+	await loader2.load('./envoirnment/remains.glb',function ( g ) {
 		
 		g.scene.rotation.set( 0, 3.14, 0 );
 		g.scene.position.set( 5, 0, 1 );
 		g.scene.scale.set( 0.5, 0.5, 0.5 );
 		scene.add( g.scene );
 	})					
-	await loader2.load('envoirnment/tree_sec.glb',function ( g ) {
+	await loader2.load('./envoirnment/tree_sec.glb',function ( g ) {
 		
 		g.scene.rotation.set( 0, 0, 0 );
 		g.scene.position.set( 12, 0, -36 );
 		scene.add( g.scene );
 	})
-	await loader2.load('envoirnment/tree_sec.glb',function ( g ) {
+	await loader2.load('./envoirnment/tree_sec.glb',function ( g ) {
 		
 		g.scene.rotation.set( 0.1, -1.12, 0 );
 		g.scene.position.set( -14, -2, 21 );
@@ -195,49 +195,49 @@ async function load_models(){
 	})
 	
 	           loader2 = new GLTFLoader();
-	           await loader2.load('envoirnment/grass.glb',function ( g ) {
+	           await loader2.load('./envoirnment/grass.glb',function ( g ) {
 		g.scene.position.set( -2, 0, -21 );
 		scene.add( g.scene );
 	})
 	
 	           loader2 = new GLTFLoader();
-	           await loader2.load('envoirnment/grass.glb',function ( g ) {
+	           await loader2.load('./envoirnment/grass.glb',function ( g ) {
 		g.scene.position.set( -11, 0, -4 );
 		scene.add( g.scene );
 	})
 	
 	           loader2 = new GLTFLoader();
-	           await loader2.load('envoirnment/grass.glb',function ( g ) {
+	           await loader2.load('./envoirnment/grass.glb',function ( g ) {
 		g.scene.position.set( -1, 0, 5 );
 		scene.add( g.scene );
 	})
 	
 	           loader2 = new GLTFLoader();
-	           await loader2.load('envoirnment/grass.glb',function ( g ) {
+	           await loader2.load('./envoirnment/grass.glb',function ( g ) {
 		g.scene.position.set( -11, 0, 28 );
 		scene.add( g.scene );
 	})
 	
 	           loader2 = new GLTFLoader();
-	           await loader2.load('envoirnment/grass.glb',function ( g ) {
+	           await loader2.load('./envoirnment/grass.glb',function ( g ) {
 		g.scene.position.set( -11, 0, -21 );
 		scene.add( g.scene );
 	})
 	
 	           loader2 = new GLTFLoader();
-	           await loader2.load('envoirnment/grass.glb',function ( g ) {
+	           await loader2.load('./envoirnment/grass.glb',function ( g ) {
 		g.scene.position.set( -0, 0, 8 );
 		scene.add( g.scene );
 	})
 	
 	           loader2 = new GLTFLoader();
-	           await loader2.load('envoirnment/grass.glb',function ( g ) {
+	           await loader2.load('./envoirnment/grass.glb',function ( g ) {
 		g.scene.position.set( -9, 0, -21 );
 		scene.add( g.scene );
 	})
 	
 	           loader2 = new GLTFLoader();
-	           await loader2.load('envoirnment/grass.glb',function ( g ) {
+	           await loader2.load('./envoirnment/grass.glb',function ( g ) {
 		g.scene.position.set( -0, 0, 21 );
 		scene.add( g.scene );
 	})
@@ -499,45 +499,45 @@ var evade_window=3000;
 var enemy_in_combat = {'enemy_1': false,'enemy_2': false,'enemy_3': false};
 var in_combat=false;
 
-var map = new THREE.TextureLoader().load( 'textures/many_warriors.png' );
+var map = new THREE.TextureLoader().load( './textures/many_warriors.png' );
 var material = new THREE.SpriteMaterial( { map: map} );
 var sprite_start = new THREE.Sprite( material );
 
-var map = new THREE.TextureLoader().load( 'textures/button_retry.png' );
+var map = new THREE.TextureLoader().load( './textures/button_retry.png' );
 var material = new THREE.SpriteMaterial( { map: map, color: 0xFF0000 } );
 var sprite_retry_button = new THREE.Sprite( material );
 
-var map = new THREE.TextureLoader().load( 'textures/retry.png' );
+var map = new THREE.TextureLoader().load( './textures/retry.png' );
 var material = new THREE.SpriteMaterial( { map: map, color: 0xFF0000 } );
 var sprite_retry = new THREE.Sprite( material );
 
-var map = new THREE.TextureLoader().load( 'textures/load_screen.jpg' );
+var map = new THREE.TextureLoader().load( './textures/load_screen.jpg' );
 var material = new THREE.SpriteMaterial( { map: map, color: 0xFF0000 } );
 var sprite_load_screen = new THREE.Sprite( material );
 
 
-var map = new THREE.TextureLoader().load( 'textures/Myhealt.png' );
+var map = new THREE.TextureLoader().load( './textures/Myhealt.png' );
 var material = new THREE.SpriteMaterial( { map: map, color: 0xFF0000 } );
 var sprite = new THREE.Sprite( material );
 sprite.scale.x=life
 sprite.scale.y=0.2
 sprite.scale.z=0.2
 
-var map = new THREE.TextureLoader().load( 'textures/healt.png' );
+var map = new THREE.TextureLoader().load( './textures/healt.png' );
 var material = new THREE.SpriteMaterial( { map: map, color: 0xF7FF00 } );
 var sprite_enemy1 = new THREE.Sprite( material );
 sprite_enemy1.scale.x=life/2
 sprite_enemy1.scale.y=0.1
 sprite_enemy1.scale.z=0.2
 
-var map = new THREE.TextureLoader().load( 'textures/healt.png' );
+var map = new THREE.TextureLoader().load( './textures/healt.png' );
 var material = new THREE.SpriteMaterial( { map: map, color: 0xF7FF00 } );
 var sprite_enemy2 = new THREE.Sprite( material );
 sprite_enemy2.scale.x=life/2
 sprite_enemy2.scale.y=0.1
 sprite_enemy2.scale.z=0.2
 
-var map = new THREE.TextureLoader().load( 'textures/healt.png' );
+var map = new THREE.TextureLoader().load( './textures/healt.png' );
 var material = new THREE.SpriteMaterial( { map: map, color: 0xF7FF00 } );
 var sprite_enemy3 = new THREE.Sprite( material );
 sprite_enemy3.scale.x=life/2
@@ -680,7 +680,7 @@ init();
 				geometryfire.setAttribute( 'particleSpeed', new THREE.Float32BufferAttribute( speed, 1 ) );
 				geometryfire.setAttribute( 'particleIntensity', new THREE.Float32BufferAttribute( intensity, 1 ) );
 				geometryfire.setAttribute( 'particleSize', new THREE.Float32BufferAttribute( size, 1 ) );
-				var fireMap = new THREE.TextureLoader().load( 'textures/firetorch_1.jpg' );
+				var fireMap = new THREE.TextureLoader().load( './textures/firetorch_1.jpg' );
 				var targetPosition = new Nodes.AttributeNode( 'targetPosition', 'vec3' );
 				var particleSpeed = new Nodes.AttributeNode( 'particleSpeed', 'float' );
 				var particleIntensity = new Nodes.AttributeNode( 'particleIntensity', 'float' );
@@ -730,22 +730,22 @@ animate();
 				
 				camera.add( listener );
 
-				audioLoader.load( 'sounds/mixkit-quick-knife-slice-cutting-2152.mp3', function( buffer ) {
+				audioLoader.load( './sounds/mixkit-quick-knife-slice-cutting-2152.mp3', function( buffer ) {
 				sound.setBuffer( buffer );
 				sound.setLoop( true );
 				sound.setVolume( 0.5 );
 				});
-				audioLoader.load( 'sounds/mixkit-metal-medieval-construction-818.wav', function( buffer ) {
+				audioLoader.load( './sounds/mixkit-metal-medieval-construction-818.wav', function( buffer ) {
 				sound_attack.setBuffer( buffer );
 				sound_attack.setLoop( true );
 				sound_attack.setVolume( 0.5 );
 				});
-				audioLoader.load( 'sounds/mixkit-metallic-sword-strike-2160.wav', function( buffer ) {
+				audioLoader.load( './sounds/mixkit-metallic-sword-strike-2160.wav', function( buffer ) {
 				sound_shield.setBuffer( buffer );
 				sound_shield.setLoop( true );
 				sound_shield.setVolume( 0.5 );
 				});
-				audioLoader.load( 'sounds/sb_indreams.mp3', function( buffer ) {
+				audioLoader.load( './sounds/sb_indreams.mp3', function( buffer ) {
 				sound_music.setBuffer( buffer );
 				sound_music.setLoop( true );
 				sound_music.setVolume( 0.5 );
@@ -845,7 +845,7 @@ animate();
 				
 				const textureLoader = new THREE.TextureLoader();
 				
-				textureLoader.load( 'textures/land0.jpg', function ( map ) {
+				textureLoader.load( './textures/land0.jpg', function ( map ) {
 					map.wrapS = THREE.RepeatWrapping;
 					map.wrapT = THREE.RepeatWrapping;
 					map.anisotropy = 4;
@@ -856,7 +856,7 @@ animate();
 
 				} );
 				
-				textureLoader.load( 'textures/stones.jpg', function ( map ) {
+				textureLoader.load( './textures/stones.jpg', function ( map ) {
 					map.wrapS = THREE.RepeatWrapping;
 					map.wrapT = THREE.RepeatWrapping;
 					map.anisotropy = 4;
@@ -865,7 +865,7 @@ animate();
 					floorMat.needsUpdate = true;
 
 				} );
-				textureLoader.load( 'textures/stones.jpg', function ( map ) {
+				textureLoader.load( './textures/stones.jpg', function ( map ) {
 					map.wrapS = THREE.RepeatWrapping;
 					map.wrapT = THREE.RepeatWrapping;
 					map.anisotropy = 4;
@@ -880,7 +880,7 @@ animate();
 					bumpScale: 0.002,
 					metalness: 0.2
 				} );
-				textureLoader.load( 'textures/wall1.png', function ( map ) {
+				textureLoader.load( './textures/wall1.png', function ( map ) {
 					map.wrapS = THREE.RepeatWrapping;
 					map.wrapT = THREE.RepeatWrapping;
 					map.anisotropy = 4;
