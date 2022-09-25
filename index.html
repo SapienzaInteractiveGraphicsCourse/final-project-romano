@@ -32,16 +32,6 @@
 		<script async src="https://unpkg.com/es-module-shims@1.3.6/dist/es-module-shims.js"></script>
 		
 		
-		
-		<script type="importmap">
-			{
-				"imports": {
-					"three": "build/three.module.js",
-					"three/addons/": "./jsm/",
-					"three/nodes": "./jsm/nodes/Nodes.js"
-				}
-			}
-		</script>
 		<script src="Common/initShaders.js"></script>
 		<script src="Common/MVnew.js"></script>
 		
@@ -65,6 +55,17 @@
 			var canvas;
 			var gl;
 			var program;
+			
+		/*
+		<script type="importmap">
+			{
+				"imports": {
+					"three": "build/three.module.js",
+					"three/addons/": "./jsm/",
+					"three/nodes": "./jsm/nodes/Nodes.js"
+				}
+			}
+		</script>*/
 
 			let scene, renderer, camera, bulbMat, bulbMat2, bulbLight2, hemiLight2, stats, enemy1, enemy2, enemy3;
 			let hemiLight1;
