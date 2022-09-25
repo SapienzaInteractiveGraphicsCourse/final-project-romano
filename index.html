@@ -38,8 +38,8 @@
 
 			//import * as THREE from 'three';
 			import * as THREE from './build/three.module.js';
-			import { nodeFrame } from './WebGLNodes.js';
-			import * as Nodes from './jsm/nodes/Nodes.js';
+			//import { nodeFrame } from './WebGLNodes.js';
+			//import * as Nodes from './jsm/nodes/Nodes.js';
 
 			import Stats from './stats.module.js';
 			import { FirstPersonControls } from './FirstPersonControls.js';
@@ -642,7 +642,7 @@ init();
 
 ////////////////////////////////////////////////////////////////FIRE/////////////////////////////////////////////////////////////////////////////////////////////
 
-
+/*
 				var positionatt = new THREE.SphereGeometry( 0.01, 3, 3 );
 				//console.log(positionatt)
 				var sphereGeometry = new THREE.SphereGeometry( 50, 130, 16 );
@@ -712,6 +712,7 @@ init();
 				particles.position.set(0.37,2,-0.33)
 				
 				scene.add( particles );
+				*/
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 			
 animate();
@@ -1755,7 +1756,7 @@ var first_frame=0
 			    //console.log(MyCharacter.model.position.x)
 				var rpp= Math.sqrt(MyCharacter.model.position.x*MyCharacter.model.position.x+MyCharacter.model.position.z*MyCharacter.model.position.z)
 				var theta = Math.asin(MyCharacter.model.position.x/rpp)
-				MyCharacter.model.getObjectByName("torch_torch_0").attach(particles)
+				//MyCharacter.model.getObjectByName("torch_torch_0").attach(particles)
 				
 				//particles.position.set(MyCharacter.model.position.x,MyCharacter.model.position.y+1.8,MyCharacter.model.position.z)
 				/*
