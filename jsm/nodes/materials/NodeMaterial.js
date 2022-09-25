@@ -1,4 +1,4 @@
-import { Material, ShaderMaterial } from 'three';
+import { Material, ShaderMaterial } from '../../../build/three.module.js';
 import { getNodesKeys, getCacheKey } from '../core/NodeUtils.js';
 import ExpressionNode from '../core/ExpressionNode.js';
 import {
