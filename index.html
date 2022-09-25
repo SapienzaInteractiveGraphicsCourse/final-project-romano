@@ -38,7 +38,7 @@
 		<script type="module">
 
 			//import * as THREE from 'three';
-			import * as THREE from 'build/three.module.js';
+			import * as THREE from './build/three.module.js';
 			import { nodeFrame } from './jsm/renderers/webgl/nodes/WebGLNodes.js';
 			import * as Nodes from './jsm/nodes/Nodes.js';
 
@@ -56,6 +56,7 @@
 			var canvas;
 			var gl;
 			var program;
+			
 
 			let scene, renderer, camera, bulbMat, bulbMat2, bulbLight2, hemiLight2, stats, enemy1, enemy2, enemy3;
 			let hemiLight1;
