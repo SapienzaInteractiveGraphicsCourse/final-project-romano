@@ -1,7 +1,7 @@
-import * as TWEEN from './tween_js/tween.esm.js';
+import * as TWEEN from 'tween_js/tween.esm.js';
 
-import { QuaternionInterpolation } from './QuaternionInterpolation.js'
-import { Utils } from './Utils.js'
+import { QuaternionInterpolation } from 'QuaternionInterpolation.js'
+import { Utils } from 'Utils.js'
 
 
 class Go_rest_bot{

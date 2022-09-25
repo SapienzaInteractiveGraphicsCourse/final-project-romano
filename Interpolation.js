@@ -1,6 +1,6 @@
-import { Utils } from './Utils.js'
-import { Go_rest_bot } from './Go_rest_bot.js'
-import { Walking_animation } from './Walking_animation.js';
+import { Utils } from 'Utils.js'
+import { Go_rest_bot } from 'Go_rest_bot.js'
+import { Walking_animation } from 'Walking_animation.js';
 
 class Interpolation{
     
