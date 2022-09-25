@@ -2,7 +2,7 @@ import LightingNode from './LightingNode.js';
 import { NodeUpdateType } from '../core/constants.js';
 import { uniform } from '../shadernode/ShaderNodeElements.js';
 
-import { Color } from 'three';
+import { Color } from '../../../build/three.module.js';
 
 class AnalyticLightNode extends LightingNode {
 
