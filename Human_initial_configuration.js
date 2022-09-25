@@ -1,6 +1,7 @@
 
-import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import * as THREE from 'three';
+import { GLTFLoader } from './jsm/loaders/GLTFLoader.js';
+
+import * as THREE from './build/three.module.js';
 
 class Human_initial_configuration{
     

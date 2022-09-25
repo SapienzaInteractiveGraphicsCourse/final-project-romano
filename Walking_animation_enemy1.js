@@ -2,7 +2,7 @@
 import * as TWEEN from './tween_js/tween.esm.js';
 import { QuaternionInterpolation } from './QuaternionInterpolation.js';
 import { Interpolation } from './Interpolation.js'
-import * as THREE from 'three';
+import * as THREE from './build/three.module.js';
 import { Utils } from './Utils.js'
 
 var spline_vec = [];
