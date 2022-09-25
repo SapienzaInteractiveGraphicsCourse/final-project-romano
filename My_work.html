@@ -1,0 +1,2007 @@
+<!DOCTYPE html>
+
+<html lang="en">
+	<head>
+		<title>three.js webgl - additive animation - skinning</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<link type="text/css" rel="stylesheet" href="main.css">
+		<style>
+			a {
+				color: blue;
+			}
+			.control-inactive button {
+				color: #888;
+			}
+		</style>
+	</head>
+	<body>
+		<div id="container"></div>
+		<div id="info">
+			<color  style="height: 10px; background-color: #FF0101">S = para con lo scudo </color><br/>
+			<color  style="height: 10px; background-color: #FF0101">A = attacca</color><br/>
+			<color  style="height: 10px; background-color: #FF0101">D = heal for 3 kills points</color><br/>
+			<color  style="height: 10px; background-color: #FF0101">FRECCIA DX = turn right visual</color><br/>
+			<color  style="height: 10px; background-color: #FF0101">FRECCIA SX = turn left visual</color><br/>
+			<color  style="height: 10px; background-color: #FF0101">FRCCIA UP = walk</color><br/>
+			<color  style="height: 10px; background-color: #FF0101">FRCCIA DOWN = walk back</color><br/>
+		</div>
+
+		<!-- Import maps polyfill -->
+		<!-- Remove this when import maps will be widely supported -->
+		<script async src="https://unpkg.com/es-module-shims@1.3.6/dist/es-module-shims.js"></script>
+		
+		
+		
+		<script type="importmap">
+			{
+				"imports": {
+					"three": "../build/three.module.js",
+					"three/addons/": "./jsm/",
+					"three/nodes": "./jsm/nodes/Nodes.js"
+				}
+			}
+		</script>
+		<script src="../Common/initShaders.js"></script>
+		<script src="../Common/MVnew.js"></script>
+		
+		<script type="module">
+
+			import * as THREE from 'three';
+			import { nodeFrame } from './jsm/renderers/webgl/nodes/WebGLNodes.js';
+			import * as Nodes from './jsm/nodes/Nodes.js';
+
+			import Stats from 'three/addons/libs/stats.module.js';
+			import { FirstPersonControls } from 'three/addons/controls/FirstPersonControls.js';
+			import { GUI } from 'three/addons/libs/lil-gui.module.min.js';
+			import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+			import { FBXLoader } from 'three/addons/loaders/FBXLoader.js'
+			import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+			import { Human_initial_configuration } from './Human_initial_configuration.js';
+			import { Walking_animation_enemy1 } from './Walking_animation_enemy1.js';
+			import { Walking_animation_enemy2 } from './Walking_animation_enemy2.js';
+			import { Walking_animation_enemy3 } from './Walking_animation_enemy3.js';
+			import { Walking_animation } from './Walking_animation.js';
+			var canvas;
+			var gl;
+			var program;
+
+			let scene, renderer, camera, bulbMat, bulbMat2, bulbLight2, hemiLight2, stats, enemy1, enemy2, enemy3;
+			let hemiLight1;
+			let model, skeleton, mixer, clock, ballMat, cubeMat, floorMat;
+			var app_loader, time_animation_walk_forward, time_animation_walk_back;
+			let step_size=0.8;
+			let walk_animation;
+			var timeApp=Date.now()
+			var timeApp2=Date.now()
+			var timeApp3=Date.now()
+			var flag, counter;
+			const crossFadeControls = [];
+			let x_bot;
+			let MyCharacter;
+			let mouseX = 0, mouseY = 0;
+			let previousShadowMap = false;
+			let bulbLight;
+			let occupied_space=[];
+			var enemy_damage=0.005;
+			var is_in_box;
+			var boxMesh,box,val_box;
+			var rx,ry,rz, r ;
+			var torch;
+			var Kill_Count=0
+			var grass
+			var loader2, loader;
+			
+			
+			//////////////////////// NOISE GRASS
+			 let simpleNoise = `
+    float N (vec2 st) { 
+        return fract( sin( dot( st.xy, vec2(12.9898,78.233 ) ) ) *  43758.5453123);
+    }
+    
+    float smoothNoise( vec2 ip ){ 
+    	vec2 lv = fract( ip );
+      vec2 id = floor( ip );
+      
+      lv = lv * lv * ( 3. - 2. * lv );
+      
+      float bl = N( id );
+      float br = N( id + vec2( 1, 0 ));
+      float b = mix( bl, br, lv.x );
+      
+      float tl = N( id + vec2( 0, 1 ));
+      float tr = N( id + vec2( 1, 1 ));
+      float t = mix( tl, tr, lv.x );
+      
+      return mix( b, t, lv.y );
+    }
+  `;
+  //////////////////////// END NOISE GRASS
+  
+var countDownDate = new Date("Jan 5, 2024 15:37:25").getTime();
+
+
+var x = setInterval(function() {
+	
+  var now = new Date().getTime();
+  
+  var distance = countDownDate - now;
+  
+  var seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+  // Display the result in the element with id="demo"
+  document.getElementById("heal").innerHTML = seconds + "s ";
+
+if (seconds == 0) {
+    clearInterval(x);
+    document.getElementById("heal").innerHTML = "READY";
+  }
+}, 1000);
+async function load_models(){
+	
+    MyCharacter = new Human_initial_configuration();
+    enemy1 = new Human_initial_configuration();
+    enemy2 = new Human_initial_configuration();
+    enemy3 = new Human_initial_configuration();
+    
+    //await MyCharacter.load('models/gltf/X_BOT_torch.glb');
+    await MyCharacter.load('models/gltf/XBot_test_skin.glb');
+    //await MyCharacter.load('models/gltf/ninja3.glb');
+    
+    await enemy1.load('models/gltf/enemy.glb');
+    await enemy2.load('models/gltf/enemy.glb');
+    await enemy3.load('models/gltf/enemy.glb');
+    
+	loader2 = new GLTFLoader();
+	await loader2.load('envoirnment/remains.glb',function ( g ) {
+		
+		g.scene.rotation.set( 0, -2.4, 0 );
+		g.scene.position.set( -11, -1, -1 );
+		g.scene.scale.set( 0.5, 0.5, 0.5 );
+		scene.add( g.scene );
+	})			
+	await loader2.load('envoirnment/remains.glb',function ( g ) {
+		
+		g.scene.rotation.set( 0, 0, 0 );
+		g.scene.position.set( 21, 0, 31 );
+		g.scene.scale.set( 0.5, 0.5, 0.5 );
+		scene.add( g.scene );
+	})			
+	await loader2.load('envoirnment/remains.glb',function ( g ) {
+		
+		g.scene.rotation.set( 0, 3.14, 0 );
+		g.scene.position.set( 5, 0, 1 );
+		g.scene.scale.set( 0.5, 0.5, 0.5 );
+		scene.add( g.scene );
+	})					
+	await loader2.load('envoirnment/tree_sec.glb',function ( g ) {
+		
+		g.scene.rotation.set( 0, 0, 0 );
+		g.scene.position.set( 12, 0, -36 );
+		scene.add( g.scene );
+	})
+	await loader2.load('envoirnment/tree_sec.glb',function ( g ) {
+		
+		g.scene.rotation.set( 0.1, -1.12, 0 );
+		g.scene.position.set( -14, -2, 21 );
+		scene.add( g.scene );
+	})				
+		occupied_space.push([-14+1,-14-1,21+1,21-1])
+		occupied_space.push([12+1,12-1,-36+1,-36-1])
+		
+	           loader2 = new GLTFLoader();
+	           await loader2.load('envoirnment/grass.glb',function ( g ) {
+		g.scene.position.set( -26, 0, -21 );
+		scene.add( g.scene );
+	})
+	
+	           loader2 = new GLTFLoader();
+	           await loader2.load('envoirnment/grass.glb',function ( g ) {
+		g.scene.position.set( -2, 0, -21 );
+		scene.add( g.scene );
+	})
+	
+	           loader2 = new GLTFLoader();
+	           await loader2.load('envoirnment/grass.glb',function ( g ) {
+		g.scene.position.set( -11, 0, -4 );
+		scene.add( g.scene );
+	})
+	
+	           loader2 = new GLTFLoader();
+	           await loader2.load('envoirnment/grass.glb',function ( g ) {
+		g.scene.position.set( -1, 0, 5 );
+		scene.add( g.scene );
+	})
+	
+	           loader2 = new GLTFLoader();
+	           await loader2.load('envoirnment/grass.glb',function ( g ) {
+		g.scene.position.set( -11, 0, 28 );
+		scene.add( g.scene );
+	})
+	
+	           loader2 = new GLTFLoader();
+	           await loader2.load('envoirnment/grass.glb',function ( g ) {
+		g.scene.position.set( -11, 0, -21 );
+		scene.add( g.scene );
+	})
+	
+	           loader2 = new GLTFLoader();
+	           await loader2.load('envoirnment/grass.glb',function ( g ) {
+		g.scene.position.set( -0, 0, 8 );
+		scene.add( g.scene );
+	})
+	
+	           loader2 = new GLTFLoader();
+	           await loader2.load('envoirnment/grass.glb',function ( g ) {
+		g.scene.position.set( -9, 0, -21 );
+		scene.add( g.scene );
+	})
+	
+	           loader2 = new GLTFLoader();
+	           await loader2.load('envoirnment/grass.glb',function ( g ) {
+		g.scene.position.set( -0, 0, 21 );
+		scene.add( g.scene );
+	})
+				
+	/*
+	await loader2.load('envoirnment/statue1.glb',function ( g ) {
+		//g.scene.position.y+=1
+		g.scene.position.set(-21,-1.6,6)
+		g.scene.rotation.set(0.4,0.1,0.2)
+		var box = new THREE.Box3();
+		var val_box = box.setFromObject ( g.scene, true )
+		occupied_space.push([val_box.max.x,val_box.min.x,val_box.max.z,val_box.min.z])
+		scene.add( g.scene );
+		console.log("loading",g.scene)
+	}) 
+	*/
+	
+	 	/*
+	await loader2.load('envoirnment/stone_castle_in_sastamala_finland.glb',function ( g ) {
+		//g.scene.position.y+=1
+		g.scene.scale.x=1
+		g.scene.scale.y=1
+		g.scene.scale.z=1
+		g.scene.rotation.set(0.0,0,0.0)
+		g.scene.position.set(31,-2,3)
+		var box = new THREE.Box3();
+		var val_box = box.setFromObject ( g.scene, true )
+		occupied_space.push([val_box.max.x,val_box.min.x,val_box.max.z,val_box.min.z])
+		scene.add( g.scene );
+		console.log("loading",g.scene)
+	}) 
+	*/
+	
+   
+}
+
+
+//initialize hill
+/*
+var pointsArray=[]
+var normalsArray=[]
+var tangentsArray=[]
+var texCoordsArray=[]
+
+
+function initialize_hill(){
+	
+    for(var i=0; i<nRows-1; i++) {
+        for(var j=0; j<nColumns-1;j++) {    
+			
+			var t1 = subtract(vertices[0], vertices[1]);
+			var t2 = subtract(vertices[2], vertices[3]);
+			var normal = cross(t1, t2);
+			var tan = cross(t2, t1);
+			
+			var ta = vec3(Math.abs(t1[0]), Math.abs(t1[1]), Math.abs(t1[2]));
+			var tb = vec3(Math.abs(t1[0]), Math.abs(t1[1]), Math.abs(t1[2]));
+			
+			if(2*i/nRows-1 > -RANGE_HILL & 2*i/nRows-1 < RANGE_HILL & 2*j/nColumns-1 > -RANGE_HILL & 2*j/nColumns-1 < RANGE_HILL){
+				
+            var a = vec4(2*i/nRows-1, data[i][j], 2*j/nColumns-1, 1.0);
+            var b = vec4(2*(i+1)/nRows-1, data[i+1][j], 2*j/nColumns-1, 1.0);
+            var c = vec4(2*(i+1)/nRows-1, data[i+1][j+1], 2*(j+1)/nColumns-1, 1.0);
+            var d = vec4(2*i/nRows-1, data[i][j+1], 2*(j+1)/nColumns-1, 1.0) ;
+            
+            texCoordsArray.push(vec2(a[0],a[2]));
+            texCoordsArray.push(vec2(b[0],b[2]));
+            texCoordsArray.push(vec2(c[0],c[2]));
+            texCoordsArray.push(vec2(d[0],d[2]));
+		
+            
+            for(var h=0; h<4;h++) {
+            normalsArray.push(normal);
+            tangentsArray.push(normal);
+			}
+			
+			if(data[i][j]>0.1){
+            pointsArray.push(a);
+            pointsArray.push(b);
+            pointsArray.push(c);
+            pointsArray.push(d);
+		}
+		else{
+			pointsArray.push(vec4(2*i/nRows-1, 0.1, 2*j/nColumns-1, 1.0));
+            pointsArray.push(vec4(2*(i+1)/nRows-1, 0.1, 2*j/nColumns-1, 1.0));
+            pointsArray.push(vec4(2*(i+1)/nRows-1, 0.1, 2*(j+1)/nColumns-1, 1.0));
+            pointsArray.push(vec4(2*i/nRows-1, 0.1 , 2*(j+1)/nColumns-1, 1.0) );
+		}
+		}
+    }}
+}
+var UprojectionMatrix;
+var stack=[];
+var Matrix_app3= mat4();
+var modelViewMatrix = mat4();
+function hill(){
+	stack.push(Matrix_app3);    
+	UprojectionMatrix = mult(modelViewMatrix, translate(0.0, -3.0, 0.0));
+	
+	var xformMatrix = mat4(
+            35.0,   0.0,  0.0,  0.0,
+            0.0,  10.0,   0.0,  0.0,
+            0.0,  0.0,  35.0,   0.0,
+            0.0,  0.0,  0.0,  1.0  
+         );
+         
+	UprojectionMatrix = mult(UprojectionMatrix, xformMatrix);
+    gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(UprojectionMatrix) );
+    var NormalMatrix = normalMatrix(Matrix_app3, true);
+    gl.uniformMatrix3fv(normalMatrixLoc, false, flatten(NormalMatrix));
+    gl.uniform1i(gl.getUniformLocation( program, "flag_Hill"), true);
+    gl.uniform1i(flagLoc, 0);
+    
+    
+    for(var i=24; i<pointsArray.length; i+=4) {
+        gl.drawArrays( gl.TRIANGLE_FAN, i, 4 );
+    }
+    
+    
+    Matrix_app3 = stack.pop();
+    
+}
+*/
+var start=true
+
+function myClick() {
+				createPanel();
+	if(start==true){
+	
+				camera.position.set(MyCharacter.model.position.x, MyCharacter.model.position.y+2.5, MyCharacter.model.position.z-4);
+		
+				if(flag_sound["music"]==0){
+					console.log("start music")
+						sound_music.play()
+						flag_sound["music"]=1
+				}
+		sprite_start.position.set(MyCharacter.model.position.x-1.8*Math.sin(MyCharacter.model.rotation.y), -100, MyCharacter.model.position.z-1.8*Math.cos(MyCharacter.model.rotation.y))
+		start=false
+		}
+	if(stop==true){
+	enemy_in_combat = {'enemy_1': false,'enemy_2': false,'enemy_3': false};
+	in_combat=false;
+
+	last_frame=0
+	console.log("restarting...")
+	MyCharacter.model.position.set(0,0,0)
+	MyCharacter.model.rotation.set(0,0,0)
+	initialize_enemy(enemy1)
+	initialize_enemy(enemy2)
+	initialize_enemy(enemy3)
+	life=4
+	choose_direction = {'enemy_1': 0,'enemy_2': 0,'enemy_3': 0};
+	choose_distance = {'enemy_1': 0,'enemy_2': 0,'enemy_3': 0};
+	reached_objective={'enemy_1': true,'enemy_2': true,'enemy_3': true};		
+	objective_x = {'enemy_1': 0,'enemy_2': 0,'enemy_3': 0};
+	objective_z = {'enemy_1': 0,'enemy_2': 0,'enemy_3': 0};
+	timer_enemy = {'enemy_1':  Date.now(),'enemy_2':  Date.now(),'enemy_3':  Date.now()};
+	enemy_spotted = {'enemy_1': false,'enemy_2': false,'enemy_3': false};	
+	flag_enemy = {'enemy_1': 3,'enemy_2': 3,'enemy_3': 3};
+	life_enemy = {'enemy_1': 4,'enemy_2': 4,'enemy_3': 4};
+	camera.position.set(MyCharacter.model.position.x, MyCharacter.model.position.y+2.5, MyCharacter.model.position.z-4);
+	Kill_Count=0
+	document.getElementById("buttonAppear").innerHTML = ""
+	stop=false
+	//console.log(sprite_retry,sprite_retry_button)
+	sprite_retry.position.set(MyCharacter.model.position.x-1.8*Math.sin(MyCharacter.model.rotation.y), -100, MyCharacter.model.position.z-1.8*Math.cos(MyCharacter.model.rotation.y))
+	sprite_retry_button.position.set(MyCharacter.model.position.x-2.2*Math.sin(MyCharacter.model.rotation.y), -100, MyCharacter.model.position.z-2.2*Math.cos(MyCharacter.model.rotation.y))
+}			
+}
+
+
+			
+			const bulbLuminousPowers = {
+				'110000 lm (1000W)': 110000,
+				'3500 lm (300W)': 3500,
+				'1700 lm (100W)': 1700,
+				'800 lm (60W)': 800,
+				'400 lm (40W)': 400,
+				'180 lm (25W)': 180,
+				'20 lm (4W)': 20,
+				'Off': 0
+			};
+			const sunLight = {
+				'110000 lm (1000W)': 110000,
+				'3500 lm (300W)': 3500,
+				'1700 lm (100W)': 1700,
+				'800 lm (60W)': 800,
+				'400 lm (40W)': 400,
+				'180 lm (25W)': 180,
+				'20 lm (4W)': 20,
+				'Off': 0
+			};
+			const hemiLuminousIrradiances = {
+				'0.0001 lx (Moonless Night)': 0.0001,
+				'0.002 lx (Night Airglow)': 0.002,
+				'0.5 lx (Full Moon)': 0.8,
+				'3.4 lx (City Twilight)': 3.4,
+				'50 lx (Living Room)': 50,
+				'100 lx (Very Overcast)': 100,
+				'350 lx (Office Room)': 350,
+				'400 lx (Sunrise/Sunset)': 400,
+				'1000 lx (Overcast)': 1000,
+				'18000 lx (Daylight)': 18000,
+				'50000 lx (Direct Sun)': 50000
+			};
+			
+			
+				// camera
+				camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 1, 100 );
+								
+
+				renderer = new THREE.WebGLRenderer({ antialias: true });
+				renderer.physicallyCorrectLights = true;
+				renderer.outputEncoding = THREE.sRGBEncoding;
+				renderer.shadowMap.enabled = true;
+				renderer.toneMapping = THREE.ReinhardToneMapping;
+				renderer.setPixelRatio( window.devicePixelRatio );
+				renderer.setSize( window.innerWidth, window.innerHeight );
+				container.appendChild( renderer.domElement );
+
+				
+				//const controls = new OrbitControls( camera, renderer.domElement );
+				//controls.enablePan = false;
+				//controls.enableZoom = false;
+
+				
+			const params = {
+				shadows: true,
+				exposure: 0.78,
+				bulbPower: Object.keys( bulbLuminousPowers )[ 4 ],
+				hemiIrradiance: Object.keys( hemiLuminousIrradiances )[ 2 ]
+			};
+			const params_sun = {
+				shadows: true,
+				exposure: 0.88,
+				bulbPower: Object.keys( bulbLuminousPowers )[ 4 ],
+				hemiIrradiance: Object.keys( hemiLuminousIrradiances )[ 2 ]
+			};
+	
+	
+let walk_animation_enemy1,walk_animation_enemy2,walk_animation_enemy3;
+var choose_direction = {'enemy_1': 0,'enemy_2': 0,'enemy_3': 0};
+var choose_distance = {'enemy_1': 0,'enemy_2': 0,'enemy_3': 0};
+var reached_objective={'enemy_1': true,'enemy_2': true,'enemy_3': true};		
+var objective_x = {'enemy_1': 0,'enemy_2': 0,'enemy_3': 0};
+var objective_z = {'enemy_1': 0,'enemy_2': 0,'enemy_3': 0};
+var timer_enemy = {'enemy_1':  Date.now(),'enemy_2':  Date.now(),'enemy_3':  Date.now()};
+var enemy_spotted = {'enemy_1': false,'enemy_2': false,'enemy_3': false};	
+var flag_enemy = {'enemy_1': 3,'enemy_2': 3,'enemy_3': 3};
+var life_enemy = {'enemy_1': 4,'enemy_2': 4,'enemy_3': 4};
+
+let stop;
+var bulbLight5 = new THREE.PointLight( 0xFFFABB, 100, 100, 2 ),bulbLight6 = new THREE.PointLight( 0xFFFABB, 100, 100, 2 ),bulbLight7 = new THREE.PointLight( 0xFFFABB, 100, 100, 2 )
+var bulbLight8= new THREE.PointLight( 0xFFFABB, 100, 100, 2 );
+var life = 4
+var evade_window=3000;
+
+
+var enemy_in_combat = {'enemy_1': false,'enemy_2': false,'enemy_3': false};
+var in_combat=false;
+
+var map = new THREE.TextureLoader().load( 'textures/many_warriors.png' );
+var material = new THREE.SpriteMaterial( { map: map} );
+var sprite_start = new THREE.Sprite( material );
+
+var map = new THREE.TextureLoader().load( 'textures/button_retry.png' );
+var material = new THREE.SpriteMaterial( { map: map, color: 0xFF0000 } );
+var sprite_retry_button = new THREE.Sprite( material );
+
+var map = new THREE.TextureLoader().load( 'textures/retry.png' );
+var material = new THREE.SpriteMaterial( { map: map, color: 0xFF0000 } );
+var sprite_retry = new THREE.Sprite( material );
+
+var map = new THREE.TextureLoader().load( 'textures/load_screen.jpg' );
+var material = new THREE.SpriteMaterial( { map: map, color: 0xFF0000 } );
+var sprite_load_screen = new THREE.Sprite( material );
+
+
+var map = new THREE.TextureLoader().load( 'textures/Myhealt.png' );
+var material = new THREE.SpriteMaterial( { map: map, color: 0xFF0000 } );
+var sprite = new THREE.Sprite( material );
+sprite.scale.x=life
+sprite.scale.y=0.2
+sprite.scale.z=0.2
+
+var map = new THREE.TextureLoader().load( 'textures/healt.png' );
+var material = new THREE.SpriteMaterial( { map: map, color: 0xF7FF00 } );
+var sprite_enemy1 = new THREE.Sprite( material );
+sprite_enemy1.scale.x=life/2
+sprite_enemy1.scale.y=0.1
+sprite_enemy1.scale.z=0.2
+
+var map = new THREE.TextureLoader().load( 'textures/healt.png' );
+var material = new THREE.SpriteMaterial( { map: map, color: 0xF7FF00 } );
+var sprite_enemy2 = new THREE.Sprite( material );
+sprite_enemy2.scale.x=life/2
+sprite_enemy2.scale.y=0.1
+sprite_enemy2.scale.z=0.2
+
+var map = new THREE.TextureLoader().load( 'textures/healt.png' );
+var material = new THREE.SpriteMaterial( { map: map, color: 0xF7FF00 } );
+var sprite_enemy3 = new THREE.Sprite( material );
+sprite_enemy3.scale.x=life/2
+sprite_enemy3.scale.y=0.1
+sprite_enemy3.scale.z=0.2
+
+//AUDIO
+const listener = new THREE.AudioListener();
+const sound = new THREE.Audio( listener );
+const sound_attack = new THREE.Audio( listener );
+const sound_shield = new THREE.Audio( listener );
+const sound_music = new THREE.Audio( listener );
+
+var particles;
+
+const audioLoader = new THREE.AudioLoader();
+
+var stop_sound={"attack":Date.now(),"defense":Date.now(),"music":Date.now()};
+var flag_sound={"attack":0,"defense":0,"music":0};
+let panelSettings;
+const mouse = new THREE.Vector2();
+var rho,arm_rotx,arm_roty;
+await load_models();
+
+const clock_grass = new THREE.Clock();
+const vertexShader = `
+  varying vec2 vUv;
+  uniform float time;
+  
+  ${simpleNoise}
+  
+	void main() {
+
+    vUv = uv;
+    float t = time * 2.;
+    
+    // VERTEX POSITION
+    
+    vec4 mvPosition = vec4( position, 1.0 );
+    #ifdef USE_INSTANCING
+    	mvPosition = instanceMatrix * mvPosition;
+    #endif
+    
+    float noise = smoothNoise(mvPosition.xz * 0.5 + vec2(0., t));
+    noise = pow(noise * 0.5 + 0.5, 2.) * 2.;
+    float dispPower = 1. - cos( uv.y * 3.1416 * 0.5 );
+    
+    float displacement = noise * ( 0.3 * dispPower );
+    mvPosition.z -= displacement;
+    
+    //
+    
+    vec4 modelViewPosition = modelViewMatrix * mvPosition;
+    gl_Position = projectionMatrix * modelViewPosition;
+
+	}
+`;
+const fragmentShader = `
+  varying vec2 vUv;
+  void main() {
+  	vec3 baseColor = vec3( 0.12, 0.99, 0.2 );
+    float clarity = ( vUv.y * 0.875 ) + 0.125;
+    gl_FragColor = vec4( baseColor * clarity, 1 );
+  }
+`;
+const uniforms = {
+	time: {
+  	value: 0
+  }
+}
+
+const leavesMaterial = new THREE.ShaderMaterial({
+	vertexShader,
+  fragmentShader,
+  uniforms,
+  side: THREE.DoubleSide
+});
+
+const instanceNumber = 1000000;
+const dummy = new THREE.Object3D();
+const geom = new THREE.PlaneGeometry( 0.001, 0.5, 1, 4 );
+const instancedMesh = new THREE.InstancedMesh( geom, leavesMaterial, instanceNumber );
+var rotationChoice=0
+for ( let i=0 ; i<instanceNumber ; i++ ) {
+	/*
+	rotationChoice=0+ Math.random() * (6.28  + 1 ) 
+	dummy.position.set(
+  	-3*Math.sin(rotationChoice) + Math.random() * ( 3*Math.sin(rotationChoice)  +3*Math.sin(rotationChoice)  + 1 ) ,
+    0,
+    -3*Math.sin(rotationChoice) + Math.random() * ( 3*Math.cos(rotationChoice)  +3*Math.cos(rotationChoice) + 1 ) 
+  );
+  */
+  dummy.position.set(
+  	-45 + Math.random() * ( 45  +45  + 1 ) ,
+    0,
+    -45 + Math.random() * ( 45  +45 + 1 ) 
+  );
+  dummy.scale.setScalar( 0.5 + Math.random() * 0.5 );
+  
+  dummy.rotation.y = Math.random() * Math.PI;
+  
+  dummy.updateMatrix();
+  instancedMesh.setMatrixAt( i, dummy.matrix );
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+init();
+				
+
+////////////////////////////////////////////////////////////////FIRE/////////////////////////////////////////////////////////////////////////////////////////////
+
+
+				var positionatt = new THREE.SphereGeometry( 0.01, 3, 3 );
+				//console.log(positionatt)
+				var sphereGeometry = new THREE.SphereGeometry( 50, 130, 16 );
+				//var positionatt = new THREE.Float32BufferAttribute([0, 0.5, 0],3,true)
+				var geometryfire = new THREE.BufferGeometry();
+				
+				// buffers
+
+				var speed = [];
+				var intensity = [];
+				var size = []
+				
+				var positionAttribute = positionatt.getAttribute( 'position' );
+				var particleCount = positionAttribute.count;
+
+				for ( let i = 0; i < particleCount; i ++ ) {
+
+					speed.push( 20 + Math.random() * 50 );
+
+					intensity.push( Math.random() * .15 );
+
+					size.push( 30 + Math.random() * 230 );
+
+				}
+				geometryfire.setAttribute( 'position', positionAttribute );
+				geometryfire.setAttribute( 'targetPosition', sphereGeometry.getAttribute( 'position' ) );
+				geometryfire.setAttribute( 'particleSpeed', new THREE.Float32BufferAttribute( speed, 1 ) );
+				geometryfire.setAttribute( 'particleIntensity', new THREE.Float32BufferAttribute( intensity, 1 ) );
+				geometryfire.setAttribute( 'particleSize', new THREE.Float32BufferAttribute( size, 1 ) );
+				var fireMap = new THREE.TextureLoader().load( 'textures/firetorch_1.jpg' );
+				var targetPosition = new Nodes.AttributeNode( 'targetPosition', 'vec3' );
+				var particleSpeed = new Nodes.AttributeNode( 'particleSpeed', 'float' );
+				var particleIntensity = new Nodes.AttributeNode( 'particleIntensity', 'float' );
+				var particleSize = new Nodes.AttributeNode( 'particleSize', 'float' );
+
+				var time = new Nodes.TimerNode();
+
+				var spriteSheetCount = new Nodes.ConstNode( new THREE.Vector2( 6, 6 ) );
+
+				var fireUV = new Nodes.SpriteSheetUVNode(
+					spriteSheetCount, // count
+					new Nodes.PointUVNode(), // uv
+					new Nodes.OperatorNode( '*', time, particleSpeed ) // current frame
+				);
+
+				var fireSprite = new Nodes.TextureNode( fireMap, fireUV );
+				var fire = new Nodes.OperatorNode( '*', fireSprite, particleIntensity );
+
+				var lerpPosition = new Nodes.UniformNode( 0 );
+
+				var positionNode = new Nodes.MathNode( Nodes.MathNode.MIX, new Nodes.PositionNode( Nodes.PositionNode.LOCAL ), targetPosition, lerpPosition );
+
+				// material
+
+				var materialfire = new Nodes.PointsNodeMaterial( {
+					depthWrite: false,
+					transparent: true,
+					sizeAttenuation: true,
+					blending: THREE.AdditiveBlending
+				} );
+
+				materialfire.colorNode = fire;
+				materialfire.sizeNode = particleSize;
+				materialfire.positionNode = positionNode;
+				
+				particles = new THREE.Points( geometryfire, materialfire );
+				particles.position.set(0.37,2,-0.33)
+				
+				scene.add( particles );
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+			
+animate();
+
+
+
+			function init() {
+				
+				camera.add( listener );
+
+				audioLoader.load( 'sounds/mixkit-quick-knife-slice-cutting-2152.mp3', function( buffer ) {
+				sound.setBuffer( buffer );
+				sound.setLoop( true );
+				sound.setVolume( 0.5 );
+				});
+				audioLoader.load( 'sounds/mixkit-metal-medieval-construction-818.wav', function( buffer ) {
+				sound_attack.setBuffer( buffer );
+				sound_attack.setLoop( true );
+				sound_attack.setVolume( 0.5 );
+				});
+				audioLoader.load( 'sounds/mixkit-metallic-sword-strike-2160.wav', function( buffer ) {
+				sound_shield.setBuffer( buffer );
+				sound_shield.setLoop( true );
+				sound_shield.setVolume( 0.5 );
+				});
+				audioLoader.load( 'sounds/sb_indreams.mp3', function( buffer ) {
+				sound_music.setBuffer( buffer );
+				sound_music.setLoop( true );
+				sound_music.setVolume( 0.5 );
+				});
+				
+				stop=false
+				is_in_box=false
+				flag=1;
+				const container = document.getElementById( 'container' );
+				clock = new THREE.Clock();
+				scene = new THREE.Scene();
+				scene.background = new THREE.Color( 0xFFFFFF );
+				scene.fog = new THREE.Fog( 0xa0a0a0, 15, 50 );
+
+				bulbMat = new THREE.MeshStandardMaterial( {
+					emissive: 0xffffff,
+					emissiveIntensity: 1,
+					color: 0xEA4D2B
+				} );
+				///////////////light balls/////////////
+				
+				const bulbGeometry = new THREE.SphereGeometry( 0.0002, 16, 8 );
+				hemiLight1 = new THREE.HemisphereLight( 0xffffba, 0x0f0e0d, 1 );
+				bulbLight = new THREE.PointLight( 0xFFFABB, 100, 100, 2 );
+				bulbLight.add( new THREE.Mesh( bulbGeometry, bulbMat ) );
+				bulbLight.position.set( 0, 2, 0 );
+				bulbLight.castShadow = true;
+				scene.add( bulbLight );
+				
+				const bulbGeometry2 = new THREE.SphereGeometry( 0.002, 16, 8 );
+				bulbLight5.add( new THREE.Mesh( bulbGeometry2, bulbMat ) );
+				
+				
+				const bulbGeometry3 = new THREE.SphereGeometry( 0.002, 16, 8 );
+				bulbLight6.add( new THREE.Mesh( bulbGeometry3, bulbMat ) );
+				
+				
+				const bulbGeometry4 = new THREE.SphereGeometry( 0.002, 16, 8 );
+				bulbLight7.add( new THREE.Mesh( bulbGeometry4, bulbMat ) );
+				
+				const bulbGeometry5 = new THREE.SphereGeometry( 0.002, 16, 8 );
+				bulbLight8.add( new THREE.Mesh( bulbGeometry5, bulbMat ) );
+				//initialize_hill()
+				
+				
+				/*
+				var vBuffer = gl.createBuffer();
+				gl.bindBuffer( gl.ARRAY_BUFFER, vBuffer );
+				gl.bufferData(gl.ARRAY_BUFFER, flatten(pointsArray), gl.STATIC_DRAW);
+    
+				var positionLoc = gl.getAttribLocation(program, "aPosition");
+				gl.vertexAttribPointer( positionLoc, 4, gl.FLOAT, false, 0, 0 );
+				gl.enableVertexAttribArray( positionLoc );
+				
+				program = initShaders( gl, "vertex-shader", "fragment-shader");
+				
+				// normal
+				var nBuffer = gl.createBuffer();
+				gl.bindBuffer(gl.ARRAY_BUFFER, nBuffer);
+				gl.bufferData(gl.ARRAY_BUFFER, flatten(normalsArray), gl.STATIC_DRAW);
+    
+				var normalLoc = gl.getAttribLocation(program, "aNormal");
+				gl.vertexAttribPointer(normalLoc, 3, gl.FLOAT, false, 0, 0);
+				gl.enableVertexAttribArray(normalLoc);
+
+				// tangent
+				var tangBuffer = gl.createBuffer();
+				gl.bindBuffer(gl.ARRAY_BUFFER, tangBuffer);
+				gl.bufferData(gl.ARRAY_BUFFER, flatten(tangentsArray), gl.STATIC_DRAW);
+    
+				var tangentsLoc = gl.getAttribLocation(program, "aTangent");
+				gl.vertexAttribPointer(tangentsLoc, 3, gl.FLOAT, false, 0, 0);
+				gl.enableVertexAttribArray(tangentsLoc);
+				// texture 
+				var tBuffer = gl.createBuffer();
+				gl.bindBuffer(gl.ARRAY_BUFFER, tBuffer);
+				gl.bufferData(gl.ARRAY_BUFFER, flatten(texCoordsArray), gl.STATIC_DRAW);
+    
+				var texCoordLoc = gl.getAttribLocation(program, "aTexCoord");
+				gl.vertexAttribPointer(texCoordLoc, 2, gl.FLOAT, false, 0, 0);
+				gl.enableVertexAttribArray(texCoordLoc);
+				*/
+						scene.add( bulbLight8 );
+						scene.add( bulbLight7 );
+						scene.add( bulbLight6 );
+						scene.add( bulbLight5 );
+				
+				const axesHelper = new THREE.AxesHelper( 5 );
+				scene.add( axesHelper );
+				/////////////mehing/////////////
+				floorMat = new THREE.MeshStandardMaterial( {
+					roughness: 0.8,
+					color: 0xffffff,
+					metalness: 0.2,
+					bumpScale: 0.0005
+				} );
+				
+				const textureLoader = new THREE.TextureLoader();
+				
+				textureLoader.load( 'textures/land0.jpg', function ( map ) {
+					map.wrapS = THREE.RepeatWrapping;
+					map.wrapT = THREE.RepeatWrapping;
+					map.anisotropy = 4;
+					map.repeat.set( 10, 24 );
+					map.encoding = THREE.sRGBEncoding;
+					floorMat.map = map;
+					floorMat.needsUpdate = true;
+
+				} );
+				
+				textureLoader.load( 'textures/stones.jpg', function ( map ) {
+					map.wrapS = THREE.RepeatWrapping;
+					map.wrapT = THREE.RepeatWrapping;
+					map.anisotropy = 4;
+					map.repeat.set( 50, 34 );
+					floorMat.bumpMap = map;
+					floorMat.needsUpdate = true;
+
+				} );
+				textureLoader.load( 'textures/stones.jpg', function ( map ) {
+					map.wrapS = THREE.RepeatWrapping;
+					map.wrapT = THREE.RepeatWrapping;
+					map.anisotropy = 4;
+					map.repeat.set( 10, 24 );
+					floorMat.roughnessMap = map;
+					floorMat.needsUpdate = true;
+
+				} );
+				cubeMat = new THREE.MeshStandardMaterial( {
+					roughness: 0.7,
+					color: 0xffffff,
+					bumpScale: 0.002,
+					metalness: 0.2
+				} );
+				textureLoader.load( 'textures/wall1.png', function ( map ) {
+					map.wrapS = THREE.RepeatWrapping;
+					map.wrapT = THREE.RepeatWrapping;
+					map.anisotropy = 4;
+					map.repeat.set( 1, 1 );
+					map.encoding = THREE.sRGBEncoding;
+					cubeMat.map = map;
+					cubeMat.needsUpdate = true;
+
+				} );
+				var cubeMat2 = new THREE.MeshStandardMaterial( {
+					roughness: 0.7,
+					color: 0xffffff,
+					bumpScale: 0.002,
+					metalness: 0.2
+				} );
+				textureLoader.load( 'textures/wall2.png', function ( map ) {
+					map.wrapS = THREE.RepeatWrapping;
+					map.wrapT = THREE.RepeatWrapping;
+					map.anisotropy = 4;
+					map.repeat.set( 1, 1 );
+					cubeMat2.bumpMap = map;
+					cubeMat2.needsUpdate = true;
+
+				} );
+				scene.add( sprite );
+				scene.add( sprite_enemy1 );
+				scene.add( sprite_enemy2 );
+				scene.add( sprite_enemy3 );
+
+				
+				ballMat = new THREE.MeshStandardMaterial( {
+					color: 0xffffff,
+					roughness: 0.5,
+					metalness: 1.0
+				} );
+				/*
+				textureLoader.load( 'textures/earth_specular_2048.jpg', function ( map ) {
+					map.anisotropy = 4;
+					map.encoding = THREE.sRGBEncoding;
+					ballMat.metalnessMap = map;
+					ballMat.needsUpdate = true;
+
+				} );
+				*/
+				
+				// maps
+				
+				//const fireMap = new THREE.TextureLoader().load( 'firetorch_1.jpg' );
+				/*
+				const fireMap = new THREE.TextureLoader().load( 'Myparticlefire.png' );
+				
+				material = new THREE.PointsMaterial( {Color: 0xFF9300, size: 0.03, sizeAttenuation: true, map: fireMap, alphaTest: 0.5, transparent: true } );
+				material.fog=false
+				material.color.g=2
+				material.color.b=2
+				material.opacity=0.5
+				
+				//material.color.setHSL( 1.0, 0.3, 0.3 );
+				console.log("material",material)
+				const geometry = new THREE.BufferGeometry();
+				const vertices = [];
+				for ( let i = 0; i < 10000; i ++ ) {
+					
+					var rP= 0.05* 0 + Math.random() * ( 0.05 - 0 )
+					var thetaP= 0* 0 + Math.random() * ( 6.28 - 0 )
+					var phiP= 0* 0 + Math.random() * ( 6.28 - 0 )
+					
+					var posx = rP*Math.cos(thetaP)*Math.sin(phiP);
+					var posy = rP*Math.sin(thetaP)*Math.sin(phiP);
+					var posz =  rP*Math.cos(phiP);
+					if(i%10){
+						posy+=0.1
+					}
+
+				vertices.push(MyCharacter.model.position.x+0.5*Math.sin(-MyCharacter.model.rotation.y+0.75)*Math.cos(-MyCharacter.parts.hips.rotation.x-MyCharacter.parts.spine.rotation.x-MyCharacter.parts.spine_2.rotation.x-MyCharacter.parts.spine_1.rotation.x)+posx,
+				MyCharacter.model.position.y+1.8+posy,
+				MyCharacter.model.position.z-0.5*Math.cos(-MyCharacter.model.rotation.y+0.75)*Math.cos(-MyCharacter.parts.hips.rotation.x-MyCharacter.parts.spine.rotation.x-MyCharacter.parts.spine_2.rotation.x-MyCharacter.parts.spine_1.rotation.x)+posz
+				);
+
+				}
+
+				geometry.setAttribute( 'position', new THREE.Float32BufferAttribute( vertices, 3 ) );
+				particles = new THREE.Points( geometry, material );
+				//scene.add( particles );
+				console.log("particles",particles)
+				*/
+				
+				
+				
+				// FLOOR and WALLS
+				const floorGeometry = new THREE.PlaneGeometry( 130, 130 );
+				const floorMesh = new THREE.Mesh( floorGeometry, floorMat );
+				floorMesh.receiveShadow = true;
+				floorMesh.rotation.x = - Math.PI / 2.0;
+				scene.add( floorMesh );
+				
+				var randomized_number=0
+				var position_randomizedx=0
+				var position_randomizedz=0
+				var max_pos=50;
+				var min_pos=50;
+				const boxGeometry = [ new THREE.SphereGeometry( 1, 4, 6 ), new THREE.SphereGeometry( 1, 8, 4 ), new THREE.SphereGeometry( 1, 6, 4 ),
+				                      new THREE.SphereGeometry( 1, 8, 4 ), new THREE.SphereGeometry( 1, 4, 4 ), new THREE.SphereGeometry( 1, 6, 4 ),
+				                      new THREE.SphereGeometry( 3, 4, 4 ), new THREE.SphereGeometry( 3, 4, 8 ), new THREE.SphereGeometry( 3, 3, 4 ),
+				                      new THREE.SphereGeometry( 2, 4, 4 ), new THREE.SphereGeometry( 2, 4, 4 ), new THREE.SphereGeometry( 2, 4, 4 )];
+				var y_rand,x_rand,choose_wall,emisphere;
+
+
+				for(var i=0;i<20;i++){
+					
+				randomized_number=0 + Math.floor( Math.random() * ( 4 - 0 + 1 ) );
+				y_rand=0 + Math.random() * ( min_pos - 0 );
+				x_rand=0 + Math.random() * ( max_pos - 0 );
+				//choose_wall=0 + Math.floor( Math.random() * ( 5 - 0 + 1 ) );
+				
+				emisphere = 0 + Math.random() * ( 1 - 0 );
+				if(emisphere>0.0 && emisphere<0.25){
+				y_rand*= -1
+				x_rand*= 1
+				}
+				if(emisphere>0.25 && emisphere<0.5){
+				y_rand*= 1
+				x_rand*= -1
+				}
+				if(emisphere>0.5 && emisphere<0.75){
+				y_rand*= 1
+				x_rand*= 1
+				}
+				if(emisphere>0.75 && emisphere<1.0){
+				y_rand*= -1
+				x_rand*= -1
+				}
+				if(y_rand<1 && y_rand>-1 && x_rand<1 && y_rand>-1){
+					y_rand+=3
+					x_rand+=3
+				}
+				
+				for(var j=0;j<randomized_number;j++){
+				choose_wall=0 + Math.floor( Math.random() * ( 11 - 0 + 1 ) );
+				
+				position_randomizedx=-4 + Math.floor( Math.random() * ( 4 + 4 + 1 ) );
+				position_randomizedz=-4 + Math.floor( Math.random() * ( 4 + 4 + 1 ) );
+				
+				var boxMesh = new THREE.Mesh( boxGeometry[choose_wall], cubeMat );
+				boxMesh.position.set( y_rand+position_randomizedx, 0.25, x_rand+position_randomizedz );
+				boxMesh.castShadow = true;
+				scene.add( boxMesh );
+				var box = new THREE.Box3();
+				var val_box = box.setFromObject ( boxMesh, true )
+				
+				occupied_space.push([val_box.max.x,val_box.min.x,val_box.max.z,val_box.min.z])
+				
+				}
+				
+				}
+				
+				box = new THREE.Box3();
+				
+				var binary_flag_shape=0
+				for(var i=-55;i<55;i+=5){
+				if(binary_flag_shape==0){
+				var wall1 = new THREE.BoxGeometry( 2.5, 12.1, 5 )
+				binary_flag_shape=1
+				}
+				else{
+					var wall1 = new THREE.BoxGeometry( 2.5, 14.1, 5 )
+					binary_flag_shape=0
+				}
+				boxMesh = new THREE.Mesh( wall1, cubeMat );
+				boxMesh.position.set( 50, 0.0, i );
+				boxMesh.castShadow = true;
+				scene.add( boxMesh );
+				val_box = box.setFromObject ( boxMesh, true )
+				occupied_space.push([val_box.max.x,val_box.min.x,val_box.max.z,val_box.min.z])
+				}
+				for(var i=-55;i<55;i+=5){
+				if(binary_flag_shape==0){
+				var wall2 = new THREE.BoxGeometry( 2.5, 12.1, 5 )
+				binary_flag_shape=1
+				}
+				else{
+					var wall2 = new THREE.BoxGeometry( 2.5, 14.1, 5 )
+					binary_flag_shape=0
+				}
+				boxMesh = new THREE.Mesh( wall2, cubeMat );
+				boxMesh.position.set( -50, 0, i );
+				boxMesh.castShadow = true;
+				scene.add( boxMesh );
+				val_box = box.setFromObject ( boxMesh, true )
+				occupied_space.push([val_box.max.x,val_box.min.x,val_box.max.z,val_box.min.z])
+				}
+				for(var i=-55;i<55;i+=5){
+				if(binary_flag_shape==0){
+				var wall3 = new THREE.BoxGeometry( 5, 12.1, 2.5 )
+				binary_flag_shape=1
+				}
+				else{
+					var wall3 = new THREE.BoxGeometry( 5, 14.1, 2.5 )
+					binary_flag_shape=0
+				}
+				boxMesh = new THREE.Mesh( wall3, cubeMat );
+				boxMesh.position.set( i, 0, -50 );
+				boxMesh.castShadow = true;
+				scene.add( boxMesh );
+				val_box = box.setFromObject ( boxMesh, true )
+				occupied_space.push([val_box.max.x,val_box.min.x,val_box.max.z,val_box.min.z])
+				}
+				for(var i=-55;i<55;i+=5){
+				if(binary_flag_shape==0){
+				var wall4 = new THREE.BoxGeometry( 5, 12.1, 2.5 )
+				binary_flag_shape=1
+				}
+				else{
+					var wall4 = new THREE.BoxGeometry( 5, 14.1, 2.5 )
+					binary_flag_shape=0
+				}
+				boxMesh = new THREE.Mesh( wall4, cubeMat );
+				boxMesh.position.set( i, 0, 50 );
+				boxMesh.castShadow = true;
+				scene.add( boxMesh );
+				val_box = box.setFromObject ( boxMesh, true )
+				occupied_space.push([val_box.max.x,val_box.min.x,val_box.max.z,val_box.min.z])
+				}
+				
+				document.addEventListener("keydown", getKeyAndMove, false);
+				
+				
+				scene.add( hemiLight1 );
+				
+				MyCharacter.set_rest_configuration();
+				 
+				//for(var j=0;j<2;i++){
+				initialize_enemy(enemy1)
+				initialize_enemy(enemy2)
+				initialize_enemy(enemy3)
+				scene.add(MyCharacter.model);
+	            scene.add(enemy1.model);
+	            scene.add(enemy2.model);
+	            scene.add(enemy3.model);
+				scene.add( instancedMesh );
+				
+				
+				 ///////////model addition
+				 
+				 //console.log( enemy1.model.position,enemy2.model.position,enemy3.model.position)
+				 
+				 walk_animation = new Walking_animation(MyCharacter);
+				 walk_animation_enemy1 = new Walking_animation_enemy1(enemy1);
+				 walk_animation_enemy2 = new Walking_animation_enemy2(enemy2);
+				 walk_animation_enemy3 = new Walking_animation_enemy3(enemy3);
+				 
+				 var walkable_boxes=[]
+				 
+				 walk_animation.init(0)
+				 walk_animation_enemy1.init(1)
+				 walk_animation_enemy2.init(2)
+				 walk_animation_enemy3.init(3)
+				 
+				
+				stats = new Stats();
+				container.appendChild( stats.dom );
+				window.addEventListener( 'resize', onWindowResize );
+				document.addEventListener('click', myClick);
+				
+			}
+			
+			
+			function getKeyAndMove(e) {
+				var key_code = e.which || e.keyCode;
+				switch (key_code) {
+					case 37: //left arrow key
+					moveLeft();
+					break;
+					case 38: //Up arrow key
+					moveUp();
+					break;
+					case 39: //right arrow key
+					moveRight();
+					break;
+					case 40: //down arrow key
+					moveDown();
+					break;
+					case 65: //down arrow key
+					punch();
+					break;
+					case 83: //down arrow key
+					shield();
+					break;
+					case 68: //down arrow key
+					heal();
+					break;
+					}
+				}
+			function heal() {
+				/*
+				if(Kill_Count>=3 && MyCharacter.model.position.x>-10 & MyCharacter.model.position.x<10 && MyCharacter.model.position.z>-10 && MyCharacter.model.position.z<10){
+				Kill_Count-=3
+				var countDownDate = new Date("Jan 5, 2024 15:37:25").getTime();
+				var x = setInterval(function() {
+					var now = new Date().getTime();
+					var distance = countDownDate - now;
+					var seconds = Math.floor((distance % (1000 * 60)) / 1000);
+					document.getElementById("heal").innerHTML = seconds + "s ";
+					}, 1000);
+			life=4
+			}*/
+			if(Kill_Count>=3 ){
+				Kill_Count-=3
+				var countDownDate = new Date("Jan 5, 2024 15:37:25").getTime();
+				var x = setInterval(function() {
+					var now = new Date().getTime();
+					var distance = countDownDate - now;
+					var seconds = Math.floor((distance % (1000 * 60)) / 1000);
+					document.getElementById("heal").innerHTML = seconds + "s ";
+					}, 1000);
+			life=4
+			}
+			}
+			function shield() {
+				if(flag_sound["music"]==0){
+					console.log("start music")
+						sound_music.play()
+						flag_sound["music"]=1
+				}
+					if(flag==1){
+					walk_animation.keyup_dispatcher('shield');
+					flag=4;
+				}
+				timeApp3=Date.now()
+			}
+			function punch() {
+				
+				if(flag_sound["music"]==0){
+					console.log("start music")
+						sound_music.play()
+						flag_sound["music"]=1
+				}
+					if(flag==1){
+					walk_animation.keyup_dispatcher('punch');
+					flag=2;
+				}
+				timeApp2=Date.now()
+			}
+			function moveLeft() {
+				if(flag_sound["music"]==0){
+					console.log("start music")
+						sound_music.play()
+						flag_sound["music"]=1
+				}
+				MyCharacter.model.rotation.y+=0.3
+				rx=MyCharacter.model.position.x-camera.position.x
+			    rz=MyCharacter.model.position.z-camera.position.z
+				r = Math.sqrt(rx*rx+rz*rz)
+				camera.position.x= MyCharacter.model.position.x-r*Math.sin(MyCharacter.model.rotation.y);
+				camera.position.z= MyCharacter.model.position.z-r*Math.cos(MyCharacter.model.rotation.y);
+				
+				
+				
+				 
+			}
+			function moveUp() {
+				
+				if(flag_sound["music"]==0){
+					console.log("start music")
+						sound_music.play()
+						flag_sound["music"]=1
+				}
+				for(var i=0;i<occupied_space.length;i++){
+				if((MyCharacter.model.position.x + step_size*Math.sin(MyCharacter.model.rotation.y) < occupied_space[i][0]) && (MyCharacter.model.position.x + step_size*Math.sin(MyCharacter.model.rotation.y) > occupied_space[i][1]) &&
+				(MyCharacter.model.position.z + step_size*Math.cos(MyCharacter.model.rotation.y) < occupied_space[i][2]) && (MyCharacter.model.position.z + step_size*Math.cos(MyCharacter.model.rotation.y) > occupied_space[i][3])){
+				    is_in_box=true;
+				}
+				}
+				
+				if(!is_in_box){
+				if(flag!=3){
+					walk_animation.keyup_dispatcher('ArrowUp');
+				}
+				
+				MyCharacter.model.position.z = MyCharacter.model.position.z + step_size*Math.cos(MyCharacter.model.rotation.y);
+				camera.position.z = camera.position.z + step_size*Math.cos(MyCharacter.model.rotation.y);
+				MyCharacter.model.position.x = MyCharacter.model.position.x + step_size*Math.sin(MyCharacter.model.rotation.y);
+				camera.position.x = camera.position.x + step_size*Math.sin(MyCharacter.model.rotation.y);
+				time_animation_walk_forward= Date.now();
+				flag=3;
+				timeApp=Date.now()
+				
+				
+				
+				bulbLight.position.set(
+				MyCharacter.model.position.x+0.4*Math.sin(-MyCharacter.model.rotation.y+1.3)*Math.cos(-MyCharacter.parts.hips.rotation.x-MyCharacter.parts.spine.rotation.x-MyCharacter.parts.spine_2.rotation.x-MyCharacter.parts.spine_1.rotation.x),
+				MyCharacter.model.position.y+1.8,
+			    MyCharacter.model.position.z-0.4*Math.cos(-MyCharacter.model.rotation.y+1.3)*Math.cos(-MyCharacter.parts.hips.rotation.x-MyCharacter.parts.spine.rotation.x-MyCharacter.parts.spine_2.rotation.x-MyCharacter.parts.spine_1.rotation.x)
+				)
+			}
+			is_in_box=false;
+			}
+			function moveRight() {
+				if(flag_sound["music"]==0){
+					console.log("start music")
+						sound_music.play()
+						flag_sound["music"]=1
+				}
+				MyCharacter.model.rotation.y-=0.3;
+			    rx=MyCharacter.model.position.x-camera.position.x;
+			    rz=MyCharacter.model.position.z-camera.position.z;
+				r = Math.sqrt(rx*rx+rz*rz);
+				camera.position.x= MyCharacter.model.position.x-r*Math.sin(MyCharacter.model.rotation.y);
+				camera.position.z= MyCharacter.model.position.z-r*Math.cos(MyCharacter.model.rotation.y);
+				
+				
+				
+			}
+			function moveDown() {
+				
+				if(flag_sound["music"]==0){
+					console.log("start music")
+						sound_music.play()
+						flag_sound["music"]=1
+				}
+				for(var i=0;i<occupied_space.length;i++){
+				if((MyCharacter.model.position.x - step_size*Math.sin(MyCharacter.model.rotation.y) < occupied_space[i][0]) && (MyCharacter.model.position.x - step_size*Math.sin(MyCharacter.model.rotation.y) > occupied_space[i][1]) &&
+				(MyCharacter.model.position.z - step_size*Math.cos(MyCharacter.model.rotation.y) < occupied_space[i][2]) && (MyCharacter.model.position.z - step_size*Math.cos(MyCharacter.model.rotation.y) > occupied_space[i][3])){
+				    is_in_box=true;
+				    }
+				}
+				
+					if(flag!=3){
+				    //flag=3;
+					walk_animation.keydown_dispatcher('ArrowDown');
+					timeApp=Date.now();
+				    }
+				if(!is_in_box){
+				MyCharacter.model.position.z = MyCharacter.model.position.z - step_size*Math.cos(MyCharacter.model.rotation.y);
+				camera.position.z = camera.position.z - step_size*Math.cos(MyCharacter.model.rotation.y);
+				MyCharacter.model.position.x = MyCharacter.model.position.x - step_size*Math.sin(MyCharacter.model.rotation.y);
+				camera.position.x = camera.position.x - step_size*Math.sin(MyCharacter.model.rotation.y);
+				time_animation_walk_back= Date.now();
+				flag=3;
+				timeApp=Date.now()
+			    }
+				is_in_box=false;
+			
+				bulbLight.position.set(
+				MyCharacter.model.position.x+0.4*Math.sin(-MyCharacter.model.rotation.y+1.3)*Math.cos(-MyCharacter.parts.hips.rotation.x-MyCharacter.parts.spine.rotation.x-MyCharacter.parts.spine_2.rotation.x-MyCharacter.parts.spine_1.rotation.x),
+				MyCharacter.model.position.y+1.8,
+			    MyCharacter.model.position.z-0.4*Math.cos(-MyCharacter.model.rotation.y+1.3)*Math.cos(-MyCharacter.parts.hips.rotation.x-MyCharacter.parts.spine.rotation.x-MyCharacter.parts.spine_2.rotation.x-MyCharacter.parts.spine_1.rotation.x)
+				)
+			
+			
+			}
+			function onWindowResize() {
+
+				camera.aspect = window.innerWidth / window.innerHeight;
+				camera.updateProjectionMatrix();
+
+				renderer.setSize( window.innerWidth, window.innerHeight );
+
+			}
+			function get_quaternions_multiplication(t1,t2){
+				return {
+					x: (t1.w*t2.x+t1.x*t2.w+t1.y*t2.z-t1.z*t2.y),
+					y: (t1.w*t2.y-t1.x*t2.z+t1.y*t2.w+t1.z*t2.x),
+					z: (t1.w*t2.z+t1.x*t2.y-t1.y*t2.x+t1.z*t2.w),
+					w: (t1.w*t2.w-t1.x*t2.x-t1.y*t2.y-t1.z*t2.z)}
+				}
+	
+	
+	function initialize_enemy(appeEn){
+				appeEn.set_rest_configuration();
+				appeEn.model.position.x= Math.random() * ( 0 - 40 )
+				appeEn.model.position.z= Math.random() * ( 0 - 40 )
+				
+				 for(var i=0;i<occupied_space.length;i++){
+					 
+					 if((appeEn.model.position.x < occupied_space[i][0]) && (appeEn.model.position.x > occupied_space[i][1]) &&
+				       (appeEn.model.position.z  < occupied_space[i][2]) && (appeEn.model.position.z> occupied_space[i][3])){
+				    appeEn.model.position.x += 8.3*Math.sin(MyCharacter.model.rotation.y)
+				    appeEn.model.position.z +=8.3*Math.cos(MyCharacter.model.rotation.y)
+				}
+		}
+}
+var last_frame=0
+
+	function enemy_searching(t1,name_enemy){
+		
+		
+		if(flag_enemy[name_enemy]==2 || flag_enemy[name_enemy]==4){
+				t1.model.position.y=-0.16
+				t1.model.rotation.x=-0.1
+			}
+			else{
+				t1.model.position.y=0
+				t1.model.rotation.x=0
+			}
+		
+		
+		var visual_enemy_xp=t1.model.position.x+6//*Math.cos(t1.model.rotation.y)
+		var visual_enemy_xm=t1.model.position.x-6
+		var visual_enemy_zp=t1.model.position.z+6//*Math.sin(t1.model.rotation.y)
+		var visual_enemy_zm=t1.model.position.z-6
+		
+		for(var i=0;i<occupied_space.length;i++){
+				if((t1.model.position.x + step_size*Math.sin(t1.model.rotation.y) < occupied_space[i][0]) && (t1.model.position.x + step_size*Math.sin(t1.model.rotation.y) > occupied_space[i][1]) &&
+				(t1.model.position.z + step_size*Math.cos(t1.model.rotation.y) < occupied_space[i][2]) && (t1.model.position.z + step_size*Math.cos(t1.model.rotation.y) > occupied_space[i][3])){
+				    reached_objective[name_enemy]=true;
+				}
+		}
+		
+		//enemy check
+		//ok		
+		if((MyCharacter.model.position.x < visual_enemy_xp) && (MyCharacter.model.position.x > visual_enemy_xm) &&
+				(MyCharacter.model.position.z  < visual_enemy_zp) && (MyCharacter.model.position.z > visual_enemy_zm)  && !enemy_spotted[name_enemy]){
+		
+		
+		
+		var c =  Math.sqrt((MyCharacter.model.position.x-t1.model.position.x)*(MyCharacter.model.position.x-t1.model.position.x)
+		                                                    +(MyCharacter.model.position.z-t1.model.position.z)*(MyCharacter.model.position.z-t1.model.position.z));
+		
+		choose_distance[name_enemy] = c - 1.3
+		
+			var coeff_ang = (t1.model.position.x-MyCharacter.model.position.x)/(t1.model.position.z-MyCharacter.model.position.z)
+			
+			if(t1.model.position.x-MyCharacter.model.position.x>0 && t1.model.position.z-MyCharacter.model.position.z>0){
+		    choose_direction[name_enemy] = Math.atan(coeff_ang)+Math.PI
+		    }
+		    else if(MyCharacter.model.position.x-t1.model.position.x>0 && MyCharacter.model.position.z-t1.model.position.z>0){
+			choose_direction[name_enemy] = Math.atan(coeff_ang)
+			}
+		    else if(t1.model.position.x-MyCharacter.model.position.x>0 && MyCharacter.model.position.z-t1.model.position.z>0){
+			choose_direction[name_enemy] = Math.atan(coeff_ang)
+			}
+		    else if(MyCharacter.model.position.x-t1.model.position.x>0 && t1.model.position.z-MyCharacter.model.position.z>0){
+			choose_direction[name_enemy] = Math.atan(coeff_ang)+Math.PI
+			}
+			
+		enemy_spotted[name_enemy]=true
+		reached_objective[name_enemy]=false
+		timer_enemy[name_enemy]=Date.now();
+					
+		}
+		
+		
+		else if((MyCharacter.model.position.x < visual_enemy_xp) && (MyCharacter.model.position.x > visual_enemy_xm) &&
+				(MyCharacter.model.position.z  < visual_enemy_zp) && (MyCharacter.model.position.z > visual_enemy_zm)
+				&& enemy_spotted[name_enemy] && !reached_objective[name_enemy]){
+		
+			var coeff_ang =(t1.model.position.x-MyCharacter.model.position.x)/(t1.model.position.z-MyCharacter.model.position.z)
+			if(t1.model.position.x-MyCharacter.model.position.x>0 && t1.model.position.z-MyCharacter.model.position.z>0){
+		    choose_direction[name_enemy] = Math.atan(coeff_ang)+Math.PI
+		    }
+		    else if(MyCharacter.model.position.x-t1.model.position.x>0 && MyCharacter.model.position.z-t1.model.position.z>0){
+			choose_direction[name_enemy] = Math.atan(coeff_ang)
+			}
+		    else if(t1.model.position.x-MyCharacter.model.position.x>0 && MyCharacter.model.position.z-t1.model.position.z>0){
+			choose_direction[name_enemy] = Math.atan(coeff_ang)
+			}
+		    else if(MyCharacter.model.position.x-t1.model.position.x>0 && t1.model.position.z-MyCharacter.model.position.z>0){
+			choose_direction[name_enemy] = Math.atan(coeff_ang)+Math.PI
+			}
+		
+			if(Math.abs(MyCharacter.model.position.x-t1.model.position.x)<1.0 && Math.abs(MyCharacter.model.position.z-t1.model.position.z)<1.0){
+				//t1.model.position.x-=0.5*(MyCharacter.model.position.x-t1.model.position.x)
+				//t1.model.position.z-=0.5*(MyCharacter.model.position.z-t1.model.position.z)
+				//console.log(Math.abs(MyCharacter.model.position.x-t1.model.position.x)<1.0 && Math.abs(MyCharacter.model.position.z-t1.model.position.z)<1.0)
+				reached_objective[name_enemy]=true
+				flag_enemy[name_enemy]=4
+				choose_distance[name_enemy]=0
+				timer_enemy[name_enemy]=Date.now()
+			}
+			
+			
+			
+			//if(Date.now()-timer_enemy[name_enemy]>10){
+				t1.model.position.x+=0.06*(MyCharacter.model.position.x-t1.model.position.x)
+				t1.model.position.z+=0.06*(MyCharacter.model.position.z-t1.model.position.z)
+				choose_distance[name_enemy]-=0.06
+				timer_enemy[name_enemy]=Date.now()
+			//}
+		}
+		
+		//ok		
+		////////////////reached_objective[name_enemy] && !enemy_spotted[name_enemy]
+		else if(!((MyCharacter.model.position.x < visual_enemy_xp) && (MyCharacter.model.position.x > visual_enemy_xm) &&
+				(MyCharacter.model.position.z  < visual_enemy_zp) && (MyCharacter.model.position.z > visual_enemy_zm)) &&
+				reached_objective[name_enemy] && !enemy_spotted[name_enemy]){
+		
+		choose_direction[name_enemy] = 0 + Math.random() *  ( 0 - 6.28 ) ;
+		choose_distance[name_enemy] = 60 + Math.random() * (60 - 100 );
+		objective_x[name_enemy] = choose_distance[name_enemy]*Math.sin(choose_direction[name_enemy]);
+		objective_z[name_enemy] = choose_distance[name_enemy]*Math.cos(choose_direction[name_enemy]);
+		
+		//console.log("searching...",choose_direction[name_enemy])
+		
+		if(objective_x[name_enemy]>80){
+			objective_x[name_enemy]=80;
+		}
+		if(objective_z[name_enemy]>80){
+			objective_z[name_enemy]=80;
+		}
+		reached_objective[name_enemy]=false
+		timer_enemy[name_enemy]=Date.now();
+		}
+		
+		//ok		
+		////////////////!reached_objective[name_enemy] && !enemy_spotted[name_enemy]
+		else if(!((MyCharacter.model.position.x < visual_enemy_xp) && (MyCharacter.model.position.x > visual_enemy_xm) &&
+				(MyCharacter.model.position.z  < visual_enemy_zp) && (MyCharacter.model.position.z > visual_enemy_zm))
+				&& !reached_objective[name_enemy] && !enemy_spotted[name_enemy]){
+			
+			//if(Date.now()-timer_enemy[name_enemy]>10){
+			t1.model.position.x+=0.06*Math.sin(choose_direction[name_enemy])
+			t1.model.position.z+=0.06*Math.cos(choose_direction[name_enemy])
+			choose_distance[name_enemy]-=0.06
+			
+			if(choose_distance[name_enemy]<0.5){
+				reached_objective[name_enemy]=true
+				choose_distance[name_enemy]=0
+			}
+		timer_enemy[name_enemy]=Date.now();
+		//}
+		}
+		
+		//ok		
+		else if(!((MyCharacter.model.position.x < visual_enemy_xp) && (MyCharacter.model.position.x > visual_enemy_xm) &&
+				(MyCharacter.model.position.z  < visual_enemy_zp) && (MyCharacter.model.position.z > visual_enemy_zm))
+				&& enemy_spotted[name_enemy]){
+					enemy_spotted[name_enemy]=false
+					reached_objective[name_enemy]=true
+				}
+				
+		///////////////// arrive to the objective ///////////
+		else if(enemy_spotted[name_enemy] && reached_objective[name_enemy]){
+			
+			enemy_in_combat[name_enemy]=true
+			in_combat=true
+		
+		// FIGHT BEGIN
+			var coeff_ang = (t1.model.position.x-MyCharacter.model.position.x)/(t1.model.position.z-MyCharacter.model.position.z)
+			if(t1.model.position.x-MyCharacter.model.position.x>0 && t1.model.position.z-MyCharacter.model.position.z>0){
+		    choose_direction[name_enemy] = Math.atan(coeff_ang)+Math.PI
+		    }
+		    else if(MyCharacter.model.position.x-t1.model.position.x>0 && MyCharacter.model.position.z-t1.model.position.z>0){
+			choose_direction[name_enemy] = Math.atan(coeff_ang)
+			}
+		    else if(t1.model.position.x-MyCharacter.model.position.x>0 && MyCharacter.model.position.z-t1.model.position.z>0){
+			choose_direction[name_enemy] = Math.atan(coeff_ang)
+			}
+		    else if(MyCharacter.model.position.x-t1.model.position.x>0 && t1.model.position.z-MyCharacter.model.position.z>0){
+			choose_direction[name_enemy] = Math.atan(coeff_ang)+Math.PI
+			}
+			if(Date.now()-timer_enemy[name_enemy]>2000 && flag_enemy[name_enemy]!=1){
+				var my_flag = 1 + Math.floor(Math.random() * (4 - 1 + 1));
+				if(my_flag==3){
+					my_flag-=1
+				}
+				//console.log(my_flag)
+				flag_enemy[name_enemy]=my_flag
+				timer_enemy[name_enemy]=Date.now()
+			}
+			else if(Date.now()-timer_enemy[name_enemy]>evade_window && flag_enemy[name_enemy]==1){
+				
+				var my_flag = 1 + Math.floor(Math.random() * (4 - 1 + 1));
+				if(my_flag==3){
+					my_flag-=1
+				}
+				
+				//console.log(my_flag)
+				flag_enemy[name_enemy]=my_flag
+				timer_enemy[name_enemy]=Date.now()
+			}
+			
+			if(Math.abs(MyCharacter.model.position.x-t1.model.position.x)>1.5 || Math.abs(MyCharacter.model.position.z-t1.model.position.z)>1.5){
+				
+			enemy_in_combat[name_enemy]=false
+			in_combat=false
+				flag_enemy[name_enemy]=3
+				reached_objective[name_enemy]=false
+				enemy_spotted[name_enemy]=true
+				
+					////////////////
+		if(flag_sound["attack"]==1){
+					sound.stop();
+					sound_attack.stop();
+					flag_sound["attack"]=0
+					stop_sound["attack"]=Date.now()
+				}
+				
+		if(flag_sound["defense"]==1){
+					sound_shield.stop();
+					//sound_attack.stop();
+					flag_sound["defense"]=0
+					stop_sound["defense"]=Date.now()
+				}
+			}
+			else{
+				if(flag_enemy[name_enemy]==2 && flag!=4 ){
+					
+					
+				if(flag_sound["attack"]==0){
+					
+					
+					
+					
+						if(flag_sound["defense"]==1){
+						sound_shield.stop();
+						flag_sound["defense"]=0
+						stop_sound["defense"]=Date.now()
+						}
+						
+						
+						
+				sound.play();
+				sound_attack.play();
+				stop_sound["attack"]=Date.now()
+				flag_sound["attack"]=1
+			    }
+			    
+			    
+			    
+			    
+				life-=enemy_damage;
+				}
+				
+				
+				if((flag_enemy[name_enemy]!=4 && flag==2)){
+					
+					
+				if(flag_sound["attack"]==0){
+					
+					
+					
+						if(flag_sound["defense"]==1){
+						sound_shield.stop();
+						flag_sound["defense"]=0
+						stop_sound["defense"]=Date.now()
+						}
+						
+						
+						
+				sound.play();
+				sound_attack.play();
+				stop_sound["attack"]=Date.now()
+				flag_sound["attack"]=1
+			    }
+			    
+			    
+			    
+				life_enemy[name_enemy]-=0.02
+			    }
+			    
+			    
+			    if((flag_enemy[name_enemy]==4 && flag==2) || (flag_enemy[name_enemy]==2 && flag==4) ){
+					
+					if(flag_sound["defense"]==0){
+						sound_shield.play()
+						
+						if(flag_sound["attack"]==1){
+						sound.stop();
+						sound_attack.stop();
+						flag_sound["attack"]=0
+						stop_sound["attack"]=Date.now()
+						}
+						
+						stop_sound["defense"]=Date.now()
+						flag_sound["defense"]=1
+						
+						
+						}
+						
+						
+				}
+				////////////////
+		if(flag_sound["attack"]==1 && Date.now()-stop_sound["attack"]>1000){
+					sound.stop();
+					sound_attack.stop();
+					flag_sound["attack"]=0
+					stop_sound["attack"]=Date.now()
+				}
+				
+		if(flag_sound["defense"]==1 && Date.now()-stop_sound["defense"]>1000){
+					sound_shield.stop();
+					//sound_attack.stop();
+					flag_sound["defense"]=0
+					stop_sound["defense"]=Date.now()
+				}
+				
+		
+			    
+			    if(life_enemy[name_enemy]<0){
+			enemy_in_combat[name_enemy]=false
+			in_combat=false
+					////////////////
+		if(flag_sound["attack"]==1){
+					sound.stop();
+					sound_attack.stop();
+					flag_sound["attack"]=0
+					stop_sound["attack"]=Date.now()
+				}
+				
+		if(flag_sound["defense"]==1){
+					sound_shield.stop();
+					//sound_attack.stop();
+					flag_sound["defense"]=0
+					stop_sound["defense"]=Date.now()
+				}
+				
+					enemy_spotted[name_enemy]=false
+					reached_objective[name_enemy]=true
+					initialize_enemy(t1)
+					life_enemy[name_enemy]=4
+					flag_enemy[name_enemy]=3
+					Kill_Count+=1
+				}
+			}
+			
+		}
+				
+		t1.model.rotation.y=choose_direction[name_enemy]
+	}
+	
+	
+function removeEntity(object) {
+    scene.remove( scene.getObjectByName(object.name) );
+}
+
+
+var first_frame=0
+	function animate() {
+		//console.log(leavesMaterial)
+		        leavesMaterial.uniforms.time.value = clock_grass.getElapsedTime();
+		        leavesMaterial.uniformsNeedUpdate = true;
+		        /*
+		        for(var i=0;i<100;i++){
+				var number_to_move=10000 +Math.random() * ( 20000 +1 )
+				for(var j=0;j<100;i++){
+		        particles.geometry.attributes.position[number_to_move]+= 0.001
+				}
+				}
+		        particles.geometry.attributes.position[number_to_move]-= 0.1
+		        */
+		        //console.log(stop)
+		        //hill();
+				requestAnimationFrame( animate );
+				
+				renderer.toneMappingExposure = Math.pow( params.exposure, 5.0 );
+				renderer.shadowMap.enabled = params.shadows;
+				
+				
+				camera.position.enabled=true
+				camera.rotation.enabled=true
+				MyCharacter.model.position.enabled=true
+				MyCharacter.model.rotation.enabled=true
+				MyCharacter.parts.right_hand.rotation.enabled=true
+				
+				if ( params.shadows !== previousShadowMap ) {
+
+					ballMat.needsUpdate = true;
+					cubeMat.needsUpdate = true;
+					floorMat.needsUpdate = true;
+					previousShadowMap = params.shadows;
+
+				}
+				
+					bulbLight5.position.set( MyCharacter.model.position.x+1, 2, MyCharacter.model.position.z+1 );
+					bulbLight8.position.set( MyCharacter.model.position.x-1, 2, MyCharacter.model.position.z-1 );
+					bulbLight7.position.set( MyCharacter.model.position.x+1, 2, MyCharacter.model.position.z-1 );
+					bulbLight6.position.set( MyCharacter.model.position.x-1, 2, MyCharacter.model.position.z+1 );
+				
+				if(flag==1){
+					
+				bulbLight.position.set(
+				MyCharacter.model.position.x+0.5*Math.sin(-MyCharacter.model.rotation.y+0.75)*Math.cos(-MyCharacter.parts.hips.rotation.x-MyCharacter.parts.spine.rotation.x-MyCharacter.parts.spine_2.rotation.x-MyCharacter.parts.spine_1.rotation.x),
+				MyCharacter.model.position.y+1.8,
+				MyCharacter.model.position.z-0.5*Math.cos(-MyCharacter.model.rotation.y+0.75)*Math.cos(-MyCharacter.parts.hips.rotation.x-MyCharacter.parts.spine.rotation.x-MyCharacter.parts.spine_2.rotation.x-MyCharacter.parts.spine_1.rotation.x)
+				)
+				
+			    }
+			    
+			    //console.log(MyCharacter.model.position.x)
+				var rpp= Math.sqrt(MyCharacter.model.position.x*MyCharacter.model.position.x+MyCharacter.model.position.z*MyCharacter.model.position.z)
+				var theta = Math.asin(MyCharacter.model.position.x/rpp)
+				MyCharacter.model.getObjectByName("torch_torch_0").attach(particles)
+				
+				//particles.position.set(MyCharacter.model.position.x,MyCharacter.model.position.y+1.8,MyCharacter.model.position.z)
+				/*
+				particles.position.x= MyCharacter.model.position.x+0.1*Math.sin(theta+Math.PI)
+				MyCharacter.model.position.y
+				particles.position.z= MyCharacter.model.position.z+0.1*Math.cos(theta+Math.PI)
+				*/
+				bulbLight.castShadow = params.shadows;
+				bulbLight.power = bulbLuminousPowers[ params.bulbPower ];
+				bulbMat.emissiveIntensity = bulbLight.intensity / Math.pow( 0.02, 2.0 ); 
+				
+				
+				bulbLight5.castShadow = params_sun.shadows;
+				bulbLight5.power = bulbLuminousPowers[ params_sun.bulbPower ];
+				
+				
+				bulbLight6.castShadow = params_sun.shadows;
+				bulbLight6.power = bulbLuminousPowers[ params_sun.bulbPower ];
+				
+				
+				bulbLight7.castShadow = params_sun.shadows;
+				bulbLight7.power = bulbLuminousPowers[ params_sun.bulbPower ];
+				
+				
+				bulbLight8.castShadow = params_sun.shadows;
+				bulbLight8.power = bulbLuminousPowers[ params_sun.bulbPower ];
+				
+				
+				bulbLight.castShadow = params.shadows;
+				bulbLight.power = bulbLuminousPowers[ params.bulbPower ];
+				bulbMat.emissiveIntensity = bulbLight.intensity / Math.pow( 0.02, 2.0 ); 
+				
+				hemiLight1.intensity = hemiLuminousIrradiances[ params.hemiIrradiance ];
+				
+				nodeFrame.update();
+				
+				enemy_searching(enemy1,'enemy_1')
+				enemy_searching(enemy2,'enemy_2')
+				enemy_searching(enemy3,'enemy_3')
+				
+				
+				const time = Date.now() * 0.0005;
+				sprite.position.set(MyCharacter.model.position.x+4*Math.sin(MyCharacter.model.rotation.y-1.3), 
+				MyCharacter.model.position.y+3.1, MyCharacter.model.position.z+4*Math.cos(MyCharacter.model.rotation.y-1.3))
+				
+				
+				sprite_enemy1.position.set(enemy1.model.position.x, enemy1.model.position.y+3.1, enemy1.model.position.z)
+				sprite_enemy2.position.set(enemy2.model.position.x, enemy2.model.position.y+3.1, enemy2.model.position.z)
+				sprite_enemy3.position.set(enemy3.model.position.x, enemy3.model.position.y+3.1, enemy3.model.position.z)
+				
+				
+				camera.lookAt(MyCharacter.model.position.x, MyCharacter.model.position.y+1.5, MyCharacter.model.position.z)
+				
+				//controls.target.set( MyCharacter.model.position.x, 1, MyCharacter.model.position.z);
+				
+				stats.update();
+				
+				if(flag==2 || flag==4){
+				MyCharacter.model.position.y=-0.16
+				MyCharacter.model.rotation.x=-0.1
+			}
+			else{
+				MyCharacter.model.position.y=0
+				MyCharacter.model.rotation.x=0
+			}
+					
+				//lose
+				
+				if(life<0){
+					stop=true
+				}
+				
+				if(Date.now()-timeApp>100 && flag==3){
+					flag=1;
+				
+				}
+				
+				if(Date.now()-timeApp2>2000 && flag==2){
+					flag=1;
+				}
+				
+				if(Date.now()-timeApp3>2000 && flag==4){
+					flag=1;
+				}
+				
+				
+				
+				document.getElementById("Kill").innerHTML=Kill_Count;
+				
+				walk_animation.update(flag,step_size,in_combat);
+				walk_animation_enemy1.update(flag_enemy['enemy_1'],0.06,enemy_in_combat['enemy_1']);
+				walk_animation_enemy2.update(flag_enemy['enemy_2'],0.06,enemy_in_combat['enemy_2']);
+				walk_animation_enemy3.update(flag_enemy['enemy_3'],0.06,enemy_in_combat['enemy_3']);
+				
+				sprite.scale.x=life
+				sprite_enemy1.scale.x=life_enemy['enemy_1']/2
+				sprite_enemy2.scale.x=life_enemy['enemy_2']/2
+				sprite_enemy3.scale.x=life_enemy['enemy_3']/2
+				
+				//hill()
+				if(start==true){
+				sprite_start.scale.set(4,2)
+				//instancedMesh.position.set(MyCharacter.model.position.x,MyCharacter.model.position.y,MyCharacter.model.position.z)
+				camera.position.set(MyCharacter.model.position.x-4*Math.sin(MyCharacter.model.rotation.y), MyCharacter.model.position.y+100, MyCharacter.model.position.z-4*Math.cos(MyCharacter.model.rotation.y))
+				camera.lookAt(MyCharacter.model.position.x, MyCharacter.model.position.y+100, MyCharacter.model.position.z)
+				sprite_start.position.set(MyCharacter.model.position.x-1.8*Math.sin(MyCharacter.model.rotation.y), MyCharacter.model.position.y+100, MyCharacter.model.position.z-1.8*Math.cos(MyCharacter.model.rotation.y))
+				scene.add(sprite_start)
+				
+				if(first_frame==0){
+				renderer.render( scene, camera );
+				}
+				first_frame+=1
+				}
+				else if(stop==true && start==false){
+				sprite_retry_button.scale.set(0.4,0.4)
+				sprite_retry.scale.set(5,5)
+				
+				camera.position.set(MyCharacter.model.position.x-4*Math.sin(MyCharacter.model.rotation.y), MyCharacter.model.position.y+100, MyCharacter.model.position.z-4*Math.cos(MyCharacter.model.rotation.y))
+				camera.lookAt(MyCharacter.model.position.x, MyCharacter.model.position.y+100, MyCharacter.model.position.z)
+				sprite_retry.position.set(MyCharacter.model.position.x-1.8*Math.sin(MyCharacter.model.rotation.y), MyCharacter.model.position.y+100, MyCharacter.model.position.z-1.8*Math.cos(MyCharacter.model.rotation.y))
+				sprite_retry_button.position.set(MyCharacter.model.position.x-2.0*Math.sin(MyCharacter.model.rotation.y), MyCharacter.model.position.y+99.4, MyCharacter.model.position.z-2.0*Math.cos(MyCharacter.model.rotation.y))
+				
+				sound_music.stop();
+				flag_sound["music"]=0
+				if(flag_sound["attack"]==1){
+					sound.stop();
+					sound_attack.stop();
+					flag_sound["attack"]=0
+					stop_sound["attack"]=Date.now()
+				}
+				
+				if(flag_sound["defense"]==1){
+					sound_shield.stop();
+					sound_attack.stop();
+					flag_sound["defense"]=0
+					stop_sound["defense"]=Date.now()
+				}
+				
+				scene.add(sprite_retry)
+				scene.add( sprite_retry_button );
+				if(last_frame==0){
+				renderer.render( scene, camera );
+				}
+				last_frame+=1
+				}
+				else if(stop==false  && start==false){
+				renderer.render( scene, camera );
+				}
+				
+
+		}
+		
+
+		
+		
+			function createPanel() {
+
+				const panel = new GUI();
+				panel.domElement.id = 'gui';
+				const folder1 = panel.addFolder( 'Envoirnment' );
+				const folder2 = panel.addFolder( 'Difficulty' );
+				const folder3 = panel.addFolder( 'Game' );
+				
+				folder1.add({ DayNight:function(){ 
+					if(params.hemiIrradiance==Object.keys( hemiLuminousIrradiances )[ 4 ]){
+						
+						//night
+					scene.background = new THREE.Color( 0x001E52 );
+					params.hemiIrradiance=Object.keys( hemiLuminousIrradiances )[ 2 ] 
+					params.bulbPower=Object.keys( bulbLuminousPowers )[ 2 ]
+					params_sun.bulbPower=Object.keys( bulbLuminousPowers )[ 7 ]}
+					
+					
+					else if(params.hemiIrradiance==Object.keys( hemiLuminousIrradiances )[ 2 ]){
+						
+						//day
+					scene.background = new THREE.Color( 0xABFCFC );
+					params.hemiIrradiance=Object.keys( hemiLuminousIrradiances )[ 4 ]
+					params.bulbPower=Object.keys( bulbLuminousPowers )[ 7 ]
+					
+					params_sun.bulbPower=Object.keys( bulbLuminousPowers )[ 2 ]
+					}
+					
+					}},'DayNight');
+					
+				folder2.add({ easy:function(){ 
+					enemy_damage=0.005
+					evade_window=3000
+					}},'easy');
+				folder2.add({ normal:function(){ 
+					enemy_damage=0.01
+					evade_window=2500
+					}},'normal');
+				folder2.add({ problematic:function(){ 
+					enemy_damage=0.01
+					evade_window=2000
+					}},'problematic');
+					
+				folder3.add({ restart:function(){ 
+					
+				if(flag_sound["attack"]==1){
+					sound.stop();
+					sound_attack.stop();
+					flag_sound["attack"]=0
+					stop_sound["attack"]=Date.now()
+				}
+				
+				if(flag_sound["defense"]==1){
+					sound_shield.stop();
+					sound_attack.stop();
+					flag_sound["defense"]=0
+					stop_sound["defense"]=Date.now()
+				}
+				if(stop==false){
+					stop=true;
+					myClick()
+				}
+				if(stop==true){
+					stop=false;
+					myClick()
+				}
+					}},'restart');
+				folder1.open();
+				folder2.open();
+				folder3.open();
+				
+
+			}
+
+
+
+		</script>
+		<div id="Killer_count"><color  style="height: 10px; background-color: #FF0101">Killer_counter: </color></div>
+		<div id="Kill"  style="width: 20px; background-color: #FF0101"></div>
+		<div id="timetoheal"><color  style="height: 20px; background-color: #FF0101">timetoheal</color></div>
+		<div id="heal"  style="width: 40px; background-color: #FF0101"></div>
+		<div id="buttonAppear" ></div>
+		
+	</body>
+</html>
