@@ -1,5 +1,5 @@
 import { WebGLNodeBuilder } from './WebGLNodeBuilder.js';
-import { NodeFrame } from './Nodes.js';
+import { NodeFrame } from './jsm/nodes/Nodes.js';
 
 import { Material } from './build/three.module.js';
 
