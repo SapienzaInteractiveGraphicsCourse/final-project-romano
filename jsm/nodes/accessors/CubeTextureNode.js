@@ -1,6 +1,6 @@
-import TextureNode from './TextureNode.js';
+import TextureNode from 'TextureNode.js';
 import UniformNode from '../core/UniformNode.js';
-import ReflectVectorNode from './ReflectVectorNode.js';
+import ReflectVectorNode from 'ReflectVectorNode.js';
 
 import { negate, vec3, nodeObject } from '../shadernode/ShaderNodeBaseElements.js';
 
