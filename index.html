@@ -143,12 +143,12 @@ async function load_models(){
     enemy3 = new Human_initial_configuration();
     
     //await MyCharacter.load('models/gltf/X_BOT_torch.glb');
-    await MyCharacter.load('models/gltf/XBot_test_skin.glb');
+    await MyCharacter.load('./models/gltf/XBot_test_skin.glb');
     //await MyCharacter.load('models/gltf/ninja3.glb');
     
-    await enemy1.load('models/gltf/enemy.glb');
-    await enemy2.load('models/gltf/enemy.glb');
-    await enemy3.load('models/gltf/enemy.glb');
+    await enemy1.load('./models/gltf/enemy.glb');
+    await enemy2.load('./models/gltf/enemy.glb');
+    await enemy3.load('./models/gltf/enemy.glb');
     
 	loader2 = new GLTFLoader();
 	await loader2.load('envoirnment/remains.glb',function ( g ) {
