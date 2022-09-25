@@ -1,4 +1,4 @@
-import Object3DNode from './Object3DNode.js';
+import Object3DNode from 'Object3DNode.js';
 
 class CameraNode extends Object3DNode {
 
