@@ -1,4 +1,4 @@
-import { Node } from 'three/nodes';
+import { Node } from './build/three.module.js';
 
 class SlotNode extends Node {
 
