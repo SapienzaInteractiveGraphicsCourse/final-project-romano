@@ -36,7 +36,10 @@
 		<script type="importmap">
 			{
 				"imports": {
-					"three": "./build/three.module.js",
+					"imports": {
+                "three": "https://unpkg.com/three@0.138.0/build/three.module.js",
+                "OrbitControls": "https://unpkg.com/three@0.138.0/examples/jsm/controls/OrbitControls.js"
+            }
 					"three/addons/": "./jsm/",
 					"three/nodes": "./jsm/nodes/Nodes.js"
 				}
