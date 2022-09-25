@@ -1,4 +1,4 @@
-import * as TWEEN from 'tween_js/tween.esm.js';
+import * as TWEEN from './tween_js/tween.esm.js';
 
 class QuaternionInterpolation{
     constructor(times, values, handler_func, easing_func, interpolation_func){

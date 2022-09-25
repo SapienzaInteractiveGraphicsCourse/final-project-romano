@@ -36,30 +36,31 @@
 		<script type="importmap">
 			{
 				"imports": {
-					"three": "build/three.module.js",
-					"three/addons/": "jsm/",
-					"three/nodes": "jsm/nodes/Nodes.js"
+					"three": "./build/three.module.js",
+					"three/addons/": "./jsm/",
+					"three/nodes": "./jsm/nodes/Nodes.js"
 				}
 			}
 		</script>
+		<script src="../Common/initShaders.js"></script>
+		<script src="../Common/MVnew.js"></script>
 		
 		<script type="module">
 
 			import * as THREE from 'three';
-			import { nodeFrame } from 'jsm/renderers/webgl/nodes/WebGLNodes.js';
-			import * as Nodes from 'jsm/nodes/Nodes.js';
-
+			import { nodeFrame } from './jsm/renderers/webgl/nodes/WebGLNodes.js';
+			import * as Nodes from './jsm/nodes/Nodes.js';
 			import Stats from 'three/addons/libs/stats.module.js';
 			import { FirstPersonControls } from 'three/addons/controls/FirstPersonControls.js';
 			import { GUI } from 'three/addons/libs/lil-gui.module.min.js';
 			import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 			import { FBXLoader } from 'three/addons/loaders/FBXLoader.js'
 			import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-			import { Human_initial_configuration } from 'Human_initial_configuration.js';
-			import { Walking_animation_enemy1 } from 'Walking_animation_enemy1.js';
-			import { Walking_animation_enemy2 } from 'Walking_animation_enemy2.js';
-			import { Walking_animation_enemy3 } from 'Walking_animation_enemy3.js';
-			import { Walking_animation } from 'Walking_animation.js';
+			import { Human_initial_configuration } from './Human_initial_configuration.js';
+			import { Walking_animation_enemy1 } from './Walking_animation_enemy1.js';
+			import { Walking_animation_enemy2 } from './Walking_animation_enemy2.js';
+			import { Walking_animation_enemy3 } from './Walking_animation_enemy3.js';
+			import { Walking_animation } from './Walking_animation.js';
 			var canvas;
 			var gl;
 			var program;

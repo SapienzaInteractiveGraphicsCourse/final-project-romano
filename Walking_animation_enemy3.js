@@ -1,9 +1,9 @@
 //import { time_animation } from './Linear_animation.js';
-import * as TWEEN from 'tween_js/tween.esm.js';
-import { QuaternionInterpolation } from 'QuaternionInterpolation.js';
-import { Interpolation } from 'Interpolation.js'
+import * as TWEEN from './tween_js/tween.esm.js';
+import { QuaternionInterpolation } from './QuaternionInterpolation.js';
+import { Interpolation } from './Interpolation.js'
 import * as THREE from 'three';
-import { Utils } from 'Utils.js'
+import { Utils } from './Utils.js'
 
 var spline_vec = [];
 		
